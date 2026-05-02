@@ -1,0 +1,19 @@
+You are a procurement document analyst. Extract structured metadata from the tender document below.
+
+Specifically extract:
+- tender_number: the unique tender identifier. Look for patterns like "GEM/YYYY/B/NNNNNNN", "DEMO/YYYY/HKP/NNN", "Tender No.", "Tender Number".
+- tender_name: the subject / title of the tender (often labelled "Tender Subject" or "Subject").
+- tender_floated_date: the date the tender was published / floated. Use ISO format YYYY-MM-DD.
+- tender_due_date: the deadline for bid submission. Use ISO format YYYY-MM-DD.
+- issuing_organization: the buyer / issuing entity (e.g., "Hindustan Petroleum Corporation Limited", "Demo Procurement Corporation Limited"). Often appears at the top of the cover page.
+- location: the issuing plant / office location, if stated.
+
+Date conversion: "10-Apr-2026" -> "2026-04-10". For dates with time components like "30-Apr-2026, 15:00 hrs IST", extract only the date portion.
+
+Use only fields you can identify with high confidence in the text. Do NOT invent values; if a field is not clearly stated, omit it.
+
+Tender document text:
+---
+{tender_text}
+---
+{validation_error_block}

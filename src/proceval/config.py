@@ -13,6 +13,10 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,
+        # Empty env vars shadow .env values by default; ignore them so an
+        # inherited empty ANTHROPIC_API_KEY=  doesn't mask the real value
+        # the user wrote into .env.
+        env_ignore_empty=True,
     )
 
     # Default to Anthropic; switch with LLM_PROVIDER env var.

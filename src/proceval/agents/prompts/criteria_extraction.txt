@@ -1,0 +1,27 @@
+You are a procurement document analyst. Read the tender document below and extract a complete list of evaluation criteria that bidders must satisfy.
+
+Distinguish between:
+- TECHNICAL criteria (Pre-Qualification Criteria — financial thresholds, similar-works experience, document submissions like PAN / GST / Udyam, blacklisting declarations, bidder response form).
+- COMMERCIAL criteria (acceptance of payment terms, special terms and conditions, deviations, delivery period, EPF / ESI / wage-compliance, subcontracting, liquidated-damages acceptance).
+
+For each criterion, capture:
+- id: a stable identifier in UPPERCASE_SNAKE_CASE. Examples: PQC_FIN_TURNOVER, PQC_TECH_SIMILAR_WORK, PQC_DOC_PAN, PQC_DOC_GST, PQC_DOC_UDYAM_MSME, PQC_DOC_BLACKLIST_DECL, PQC_DOC_BIDDER_RESPONSE, COMM_PPE, COMM_EPF_ESI, COMM_LD_ACCEPTANCE.
+- name: a short human-readable name.
+- description: a faithful summary of the requirement text from the tender.
+- type: exactly one of "financial" / "technical" / "document" / "commercial".
+- threshold_value: numeric threshold in INR Lakhs if stated (e.g., 100.0 for "Rs. 100 Lakhs"). Null otherwise.
+- msme_relaxation_value: relaxed threshold for MSME bidders if mentioned (e.g., 85.0 for a 15% relaxation on a 100-lakh threshold). Null if not mentioned.
+- aggregation_rule: "single_max" if a single document of value >= threshold suffices; "sum" if aggregate must reach threshold; "average" if average of multiple periods must reach threshold; null if not applicable.
+- source_clause: the section / clause reference in the tender (e.g., "PQC-1 (Financial)", "Section 1", "Section 4 — Special Conditions").
+
+Be exhaustive — extract every criterion you find, including all PQC items and every numbered Special Condition. Be precise — do not invent thresholds the tender does not state. If a criterion has no numeric threshold (e.g., a document-submission requirement), leave threshold_value null.
+
+Tender document text:
+---
+{tender_text}
+---
+
+Tender metadata for context:
+{tender_metadata}
+{feedback_section}
+{validation_error_block}

@@ -3,6 +3,8 @@ name = "proceval"
 version = "0.1.0"
 description = "Procurement Evaluation AI — multi-agent LLM system for PSU tender evaluation"
 requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Nithin Kokkisa" }]
 dependencies = [
     # LLM / agents
     "langchain>=0.3.0",

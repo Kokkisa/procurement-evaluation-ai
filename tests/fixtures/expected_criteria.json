@@ -1,0 +1,157 @@
+{
+  "_comment": "Hand-labeled ground-truth criteria for tests/fixtures/tender_housekeeping_demo.pdf. The 'core_required' set is the 7 PQC items the synthetic tender explicitly mandates (see scripts/generate_synthetic_vendors.py, Section 1 PQC items). The 'agent_inferred' set captures extras the agent reasonably surfaces from Section 4 Special Conditions and the cover-page meta — these are tolerated extras whose count and IDs may shift run-to-run. The regression test asserts only that the core set is present with correct IDs and threshold values; agent_inferred is informational.",
+  "tender_reference": "tests/fixtures/tender_housekeeping_demo.pdf",
+  "tender_number": "DEMO/2026/HKP/001",
+  "core_required": [
+    {
+      "id": "PQC_FIN_TURNOVER",
+      "name": "Average Annual Turnover",
+      "type": "financial",
+      "threshold_value": 100.0,
+      "msme_relaxation_value": 85.0,
+      "aggregation_rule": "average",
+      "source_clause": "PQC-1 (Financial)",
+      "notes": "Avg annual turnover over FY 2023-24 / 2022-23 / 2021-22 must be >= 100 lakhs (MSME relaxed to 85 lakhs)."
+    },
+    {
+      "id": "PQC_TECH_SIMILAR_WORK",
+      "name": "Similar Works Experience",
+      "type": "technical",
+      "threshold_value": 100.0,
+      "msme_relaxation_value": 85.0,
+      "aggregation_rule": "single_max",
+      "source_clause": "PQC-2 (Technical — Similar Works)",
+      "notes": "At least one similar housekeeping/sanitation/facility-cleaning contract of >= 100 lakhs in the last 7 years (MSME relaxed to 85 lakhs)."
+    },
+    {
+      "id": "PQC_DOC_PAN",
+      "name": "PAN Card Submission",
+      "type": "document",
+      "threshold_value": null,
+      "msme_relaxation_value": null,
+      "aggregation_rule": null,
+      "source_clause": "PQC-3 (Document)",
+      "notes": "Self-attested PAN card. Mandatory document; no numeric threshold."
+    },
+    {
+      "id": "PQC_DOC_GST",
+      "name": "GST Registration Certificate",
+      "type": "document",
+      "threshold_value": null,
+      "msme_relaxation_value": null,
+      "aggregation_rule": null,
+      "source_clause": "PQC-4 (Document)",
+      "notes": "Self-attested GST REG-06. Mandatory document; no numeric threshold."
+    },
+    {
+      "id": "PQC_DOC_UDYAM_MSME",
+      "name": "Udyam Registration Certificate",
+      "type": "document",
+      "threshold_value": null,
+      "msme_relaxation_value": null,
+      "aggregation_rule": null,
+      "source_clause": "PQC-5 (Document — Conditional)",
+      "notes": "Udyam certificate — mandatory only if claiming MSME relaxation under PQC-1 / PQC-2."
+    },
+    {
+      "id": "PQC_DOC_BLACKLIST_DECL",
+      "name": "Blacklisting Declaration",
+      "type": "document",
+      "threshold_value": null,
+      "msme_relaxation_value": null,
+      "aggregation_rule": null,
+      "source_clause": "PQC-6 (Document)",
+      "notes": "Signed declaration on bidder letterhead confirming non-blacklisting. Mandatory."
+    },
+    {
+      "id": "PQC_DOC_BIDDER_RESPONSE",
+      "name": "Bidder Response Form",
+      "type": "document",
+      "threshold_value": null,
+      "msme_relaxation_value": null,
+      "aggregation_rule": null,
+      "source_clause": "PQC-7 (Document)",
+      "notes": "Completed and signed Bidder Response Form per Annexure B. Mandatory."
+    }
+  ],
+  "agent_inferred": [
+    {
+      "id": "TECH_SUPERVISOR_QUALIFICATION",
+      "type": "technical",
+      "source_clause": "Section 4 — Special Conditions (Supervisor Qualifications)",
+      "notes": "Lifted from Special Conditions. Could equally be classified commercial."
+    },
+    {
+      "id": "TECH_BACKGROUND_VERIFICATION",
+      "type": "technical",
+      "source_clause": "Section 4 — Special Conditions (Background Verification)",
+      "notes": "Lifted from Special Conditions; police verification of deployed personnel."
+    },
+    {
+      "id": "COMM_PPE",
+      "type": "commercial",
+      "source_clause": "Section 4 — Special Conditions (PPE)",
+      "notes": "Bidder shall provide PPE to all deployed personnel."
+    },
+    {
+      "id": "COMM_EPF_ESI",
+      "type": "commercial",
+      "source_clause": "Section 4 — Special Conditions (EPF / ESI Compliance)",
+      "notes": "EPF + ESI statutory compliance with monthly remittance evidence."
+    },
+    {
+      "id": "COMM_STATUTORY_LEAVE",
+      "type": "commercial",
+      "source_clause": "Section 4 — Special Conditions (Annual & Statutory Leave)",
+      "notes": "Bidder responsible for shift-cover during paid leave."
+    },
+    {
+      "id": "COMM_TRAINING",
+      "type": "commercial",
+      "source_clause": "Section 4 — Special Conditions (Training)",
+      "notes": "Quarterly refresher training; records auditable."
+    },
+    {
+      "id": "COMM_LD_ACCEPTANCE",
+      "type": "commercial",
+      "source_clause": "Section 4 — Special Conditions (Liquidated Damages)",
+      "notes": "0.5% of monthly contract value per day of significant non-performance, capped at 10%."
+    },
+    {
+      "id": "COMM_SUBCONTRACTING",
+      "type": "commercial",
+      "source_clause": "Section 4 — Special Conditions (Subcontracting)",
+      "notes": "Subcontracting requires prior written approval."
+    },
+    {
+      "id": "COMM_CONSUMABLES_PROVISION",
+      "type": "commercial",
+      "source_clause": "Section 2 — Scope of Work",
+      "notes": "Consumables (cleaning agents, mops, brooms, garbage bags, restroom supplies) within scope at no extra cost."
+    },
+    {
+      "id": "COMM_WAGE_COMPLIANCE",
+      "type": "commercial",
+      "source_clause": "Section 3 — Manpower Requirement (Indicative Minimum Wages)",
+      "notes": "Statutory minimum wage compliance; indicative wage table provided."
+    },
+    {
+      "id": "COMM_EMD",
+      "type": "commercial",
+      "source_clause": "Cover page (EMD)",
+      "notes": "Earnest Money Deposit Rs. 4.80 Lakhs, lifted from cover-page meta."
+    }
+  ],
+  "regression_invariants": {
+    "min_total_criteria": 12,
+    "core_required_ids": [
+      "PQC_FIN_TURNOVER",
+      "PQC_TECH_SIMILAR_WORK",
+      "PQC_DOC_PAN",
+      "PQC_DOC_GST",
+      "PQC_DOC_UDYAM_MSME",
+      "PQC_DOC_BLACKLIST_DECL",
+      "PQC_DOC_BIDDER_RESPONSE"
+    ]
+  }
+}

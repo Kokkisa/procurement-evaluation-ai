@@ -16,6 +16,7 @@ roll-up is pure logic so it's reproducible and auditable.
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +26,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable
 from pydantic import ValidationError
 
+from ..config import settings
 from ..ingestion.pdf_parser import extract_text
 from ..llm_factory import get_chat_model
 from ..schemas.tender import EvalCriterion
@@ -33,21 +35,51 @@ from .verdict import compute_overall_verdict
 
 PROMPT_PATH = Path(__file__).parent / "prompts" / "vendor_evaluation.txt"
 
-DEFAULT_MAX_CONCURRENCY = 8
+logger = logging.getLogger(__name__)
 
 
 class VendorEvaluationAgent:
+    """Concurrency model:
+
+    A single ``asyncio.Semaphore`` lives on the *instance* (lazily bound to
+    the first event loop that touches it). All per-criterion calls acquire
+    it, including those issued in parallel for technical + commercial
+    rubrics from ``api/services.py``. That gives a hard global cap; the
+    inter-batch sleep adds a token-bucket safety margin so cumulative
+    tokens-per-minute stay under the org's tier limit.
+    """
+
     def __init__(
         self,
         model: BaseChatModel | None = None,
         max_retries: int = 2,
-        max_concurrency: int = DEFAULT_MAX_CONCURRENCY,
+        max_concurrency: int | None = None,
+        inter_batch_sleep_seconds: float | None = None,
         prompt_template: str | None = None,
     ) -> None:
         self.model = model if model is not None else get_chat_model(temperature=0.0)
         self.max_retries = max_retries
-        self.max_concurrency = max_concurrency
+        self.max_concurrency = (
+            max_concurrency
+            if max_concurrency is not None
+            else settings.llm_max_concurrency
+        )
+        self.inter_batch_sleep_seconds = (
+            inter_batch_sleep_seconds
+            if inter_batch_sleep_seconds is not None
+            else settings.llm_inter_batch_sleep_seconds
+        )
         self._prompt_text = prompt_template or PROMPT_PATH.read_text(encoding="utf-8")
+        # Lazy: bound on first acquire, so it picks up whichever event loop
+        # the route handler / script is running under.
+        self._semaphore: asyncio.Semaphore | None = None
+        self._in_flight: int = 0
+        self._batch_no: int = 0
+
+    def _get_semaphore(self) -> asyncio.Semaphore:
+        if self._semaphore is None:
+            self._semaphore = asyncio.Semaphore(self.max_concurrency)
+        return self._semaphore
 
     def _build_chain(self) -> Runnable:
         prompt = ChatPromptTemplate.from_template(self._prompt_text)
@@ -55,6 +87,28 @@ class VendorEvaluationAgent:
         return prompt | structured_llm
 
     async def aevaluate_criterion(
+        self,
+        criterion: EvalCriterion,
+        vendor_name: str,
+        is_msme: bool,
+        vendor_docs_text: str,
+    ) -> CriterionEvaluation:
+        sem = self._get_semaphore()
+        async with sem:
+            self._in_flight += 1
+            slot = self._in_flight
+            logger.info(
+                "Acquired LLM slot %d/%d for %s / %s",
+                slot, self.max_concurrency, vendor_name, criterion.id,
+            )
+            try:
+                return await self._run_call(
+                    criterion, vendor_name, is_msme, vendor_docs_text
+                )
+            finally:
+                self._in_flight -= 1
+
+    async def _run_call(
         self,
         criterion: EvalCriterion,
         vendor_name: str,
@@ -109,13 +163,45 @@ class VendorEvaluationAgent:
         is_msme: bool,
         vendor_docs_text: str,
     ) -> list[CriterionEvaluation]:
-        sem = asyncio.Semaphore(self.max_concurrency)
+        """Evaluate every criterion for one vendor.
 
-        async def _eval(c: EvalCriterion) -> CriterionEvaluation:
-            async with sem:
-                return await self.aevaluate_criterion(c, vendor_name, is_msme, vendor_docs_text)
+        Criteria are processed in batches of ``max_concurrency`` so the
+        inter-batch sleep is visible (each batch is logged explicitly). The
+        per-call semaphore on ``aevaluate_criterion`` is the hard cap and
+        also covers parallel ``aevaluate_vendor`` invocations (technical +
+        commercial fan-out from ``api/services.py``).
+        """
+        results: list[CriterionEvaluation] = []
+        chunks = [
+            criteria[i : i + self.max_concurrency]
+            for i in range(0, len(criteria), self.max_concurrency)
+        ]
+        for chunk in chunks:
+            self._batch_no += 1
+            current_batch = self._batch_no
+            if current_batch > 1 and self.inter_batch_sleep_seconds > 0:
+                logger.info(
+                    "Sleeping %.2fs before batch %d (token-bucket margin)",
+                    self.inter_batch_sleep_seconds,
+                    current_batch,
+                )
+                await asyncio.sleep(self.inter_batch_sleep_seconds)
+            else:
+                logger.info(
+                    "Starting batch %d (%d call(s)) for %s",
+                    current_batch,
+                    len(chunk),
+                    vendor_name,
+                )
 
-        return await asyncio.gather(*[_eval(c) for c in criteria])
+            batch_results = await asyncio.gather(
+                *[
+                    self.aevaluate_criterion(c, vendor_name, is_msme, vendor_docs_text)
+                    for c in chunk
+                ]
+            )
+            results.extend(batch_results)
+        return results
 
     async def aevaluate_vendor_full(
         self,

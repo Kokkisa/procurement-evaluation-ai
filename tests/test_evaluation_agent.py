@@ -230,9 +230,88 @@ def test_aevaluate_vendor_respects_concurrency_limit():
             return RunnableLambda(_afn)
 
     stub = _CountingStub()
-    agent = VendorEvaluationAgent(model=stub, max_concurrency=1)
+    agent = VendorEvaluationAgent(
+        model=stub, max_concurrency=1, inter_batch_sleep_seconds=0
+    )
     asyncio.run(agent.aevaluate_vendor(criteria, "V", False, "docs"))
     assert in_flight["max_seen"] == 1
+
+
+def test_aevaluate_vendor_caps_concurrency_at_LLM_MAX_CONCURRENCY():
+    """10 concurrent calls under max_concurrency=3 should never see more
+    than 3 in flight at any moment. The Block 10 fix lives or dies on this."""
+    criteria = [_crit(f"C{i}") for i in range(10)]
+    in_flight = {"current": 0, "max_seen": 0}
+
+    class _CountingStub:
+        def with_structured_output(self, _s, **_k):
+            async def _afn(prompt_value):
+                in_flight["current"] += 1
+                in_flight["max_seen"] = max(in_flight["max_seen"], in_flight["current"])
+                # Hold the slot long enough that another coroutine could
+                # observe a >3 in-flight count if the cap were broken.
+                await asyncio.sleep(0.01)
+                in_flight["current"] -= 1
+                text = (
+                    prompt_value.to_string()
+                    if hasattr(prompt_value, "to_string")
+                    else str(prompt_value)
+                )
+                for c in criteria:
+                    if f"ID: {c.id}" in text:
+                        return _ev(c.id)
+                raise RuntimeError("no match")
+
+            return RunnableLambda(_afn)
+
+    agent = VendorEvaluationAgent(
+        model=_CountingStub(),
+        max_concurrency=3,
+        inter_batch_sleep_seconds=0,  # don't slow the test down
+    )
+    asyncio.run(agent.aevaluate_vendor(criteria, "V", False, "docs"))
+    assert in_flight["max_seen"] <= 3, (
+        f"Concurrency cap broken: peaked at {in_flight['max_seen']} concurrent calls "
+        f"with max_concurrency=3 — the asyncio.Semaphore is not bounding the fan-out."
+    )
+
+
+def test_aevaluate_vendor_logs_throttle_decisions(caplog):
+    """Both 'Acquired LLM slot' and 'Sleeping ... before batch N' must reach
+    the logging stream at INFO level — that's what makes the throttling
+    visible to a reviewer reading the script output / LangSmith span timing."""
+    criteria = [_crit(f"C{i}") for i in range(5)]
+    results = {c.id: _ev(c.id) for c in criteria}
+    stub = _MappingStubLLM(results)
+    agent = VendorEvaluationAgent(
+        model=stub, max_concurrency=2, inter_batch_sleep_seconds=0.01
+    )
+
+    with caplog.at_level("INFO", logger="proceval.agents.evaluation_agent"):
+        asyncio.run(agent.aevaluate_vendor(criteria, "V", False, "docs"))
+
+    messages = [r.message for r in caplog.records]
+    assert any("Acquired LLM slot" in m for m in messages), messages
+    assert any("Sleeping" in m and "before batch" in m for m in messages), messages
+
+
+def test_inter_batch_sleep_zero_skips_sleep_log(caplog):
+    """When inter_batch_sleep_seconds=0, no 'Sleeping' line is emitted —
+    the test suite uses this so it doesn't actually slow down."""
+    criteria = [_crit(f"C{i}") for i in range(4)]
+    results = {c.id: _ev(c.id) for c in criteria}
+    stub = _MappingStubLLM(results)
+    agent = VendorEvaluationAgent(
+        model=stub, max_concurrency=2, inter_batch_sleep_seconds=0
+    )
+
+    with caplog.at_level("INFO", logger="proceval.agents.evaluation_agent"):
+        asyncio.run(agent.aevaluate_vendor(criteria, "V", False, "docs"))
+
+    assert not any(
+        "Sleeping" in r.message and "before batch" in r.message
+        for r in caplog.records
+    )
 
 
 # --- Sync wrapper + verdict roll-up ----------------------------------------

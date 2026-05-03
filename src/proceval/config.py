@@ -33,6 +33,13 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://proceval:proceval@localhost:5432/proceval"
 
+    # LLM orchestration throttling. Anthropic Tier 1 caps input at
+    # 30k tokens/min; per-(vendor, criterion) calls run ~5k input each, so
+    # a hard concurrency cap + small inter-batch margin keeps us off the
+    # 429 path. Tunable via .env without code changes.
+    llm_max_concurrency: int = 3
+    llm_inter_batch_sleep_seconds: float = 1.5
+
     langchain_tracing_v2: bool = False
     langchain_api_key: str = ""
     langchain_project: str = "procurement-evaluation-ai"

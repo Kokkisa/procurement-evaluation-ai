@@ -25,12 +25,24 @@ infrastructure failure (fail-fast).
 from __future__ import annotations
 
 import io
+import logging
 import os
 import sys
 import time
 import zipfile
 from pathlib import Path
 from typing import Any
+
+# Surface evaluation-agent throttling lines ("Acquired LLM slot 2/3",
+# "Sleeping 1.50s before batch 4") so the operator sees rate-limit
+# decisions in real time. Silence noisier transport loggers.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)-5s %(name)s | %(message)s",
+    datefmt="%H:%M:%S",
+)
+for _noisy in ("httpx", "httpcore", "urllib3", "openai", "anthropic", "langsmith"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TENDER_PDF = REPO_ROOT / "tests" / "fixtures" / "tender_housekeeping_demo.pdf"

@@ -17,13 +17,15 @@ from proceval.config import Settings
 
 @pytest.fixture
 def _isolated_env(monkeypatch):
-    """Clear LangSmith + Anthropic env vars so .env values aren't shadowed."""
+    """Clear all overridable env vars so .env values aren't shadowed."""
     for var in (
         "LANGCHAIN_TRACING_V2",
         "LANGCHAIN_API_KEY",
         "LANGCHAIN_PROJECT",
         "ANTHROPIC_API_KEY",
         "DATABASE_URL",
+        "LLM_MAX_CONCURRENCY",
+        "LLM_INTER_BATCH_SLEEP_SECONDS",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -75,3 +77,31 @@ def test_langsmith_explicit_false(_isolated_env, tmp_path: Path):
     # only the tracing toggle controls whether it's used.
     assert s.langchain_api_key == "DUMMY_INERT_TOKEN"
     assert s.langchain_project == "ignored-when-disabled"
+
+
+# --- LLM rate-limit knobs --------------------------------------------------
+
+
+def test_llm_throttle_defaults_when_absent(_isolated_env, tmp_path: Path):
+    """No values in .env => Tier-1 safe defaults: cap 3, 1.5s inter-batch."""
+    env_file = tmp_path / ".env"
+    env_file.write_text("")
+
+    s = Settings(_env_file=str(env_file))
+
+    assert s.llm_max_concurrency == 3
+    assert s.llm_inter_batch_sleep_seconds == 1.5
+
+
+def test_llm_throttle_overridable_via_env_file(_isolated_env, tmp_path: Path):
+    """A higher tier can raise the cap and lower the sleep without code changes."""
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "LLM_MAX_CONCURRENCY=8\n"
+        "LLM_INTER_BATCH_SLEEP_SECONDS=0.25\n"
+    )
+
+    s = Settings(_env_file=str(env_file))
+
+    assert s.llm_max_concurrency == 8
+    assert s.llm_inter_batch_sleep_seconds == 0.25

@@ -94,9 +94,9 @@ def test_vendor_index_msme_detection_matches_expected():
 def test_critical_numbers_parse_from_balance_sheets():
     """The numbers downstream eval will key on must be extractable from the PDF text."""
     cases = [
-        ("aroha_facility_services",            "audited_balance_sheet_FY2023-24.pdf", "68.20"),
+        ("aroha_facility_services",            "audited_balance_sheet_FY2023-24.pdf", "95.40"),
         ("tejaswini_housekeeping_enterprises", "audited_balance_sheet_FY2023-24.pdf", "276.40"),
-        ("shri_mangalam_safai_works",          "audited_balance_sheet_FY2023-24.pdf", "71.30"),
+        ("shri_mangalam_safai_works",          "audited_balance_sheet_FY2023-24.pdf", "99.20"),
         ("prabhat_deep_sanitation_solutions",  "audited_balance_sheet_FY2023-24.pdf", "248.90"),
         ("raghavendra_maintenance_works",      "audited_balance_sheet_FY2023-24.pdf", "1,253.40"),
     ]

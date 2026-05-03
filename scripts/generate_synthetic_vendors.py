@@ -193,9 +193,12 @@ VENDORS: list[VendorProfile] = [
         is_msme=True,
         is_accept=True,
         failure_mode=None,
-        turnover_fy_23_24=68.20,
-        turnover_fy_22_23=62.10,
-        turnover_fy_21_22=55.40,
+        # 3-yr avg = 88.23 lakhs: above MSME-relaxed 85 (passes), below
+        # non-MSME 100 (would fail without MSME). Demonstrates the relaxation
+        # path being load-bearing for the ACCEPT verdict.
+        turnover_fy_23_24=95.40,
+        turnover_fy_22_23=87.20,
+        turnover_fy_21_22=82.10,
         similar_work_po_value=118.50,
         address="Plot 47, MIDC Industrial Area, Bhosari, Pune - 411026",
         state="Maharashtra",
@@ -237,9 +240,12 @@ VENDORS: list[VendorProfile] = [
         is_msme=True,
         is_accept=False,
         failure_mode="similar_work_below_threshold",
-        turnover_fy_23_24=71.30,
-        turnover_fy_22_23=64.85,
-        turnover_fy_21_22=52.40,
+        # 3-yr avg = 92.70 lakhs: comfortably above MSME-relaxed 85 (passes
+        # turnover) so the rejection ground is isolated to similar-work
+        # PO < threshold — clean signal for the remarks-quality test.
+        turnover_fy_23_24=99.20,
+        turnover_fy_22_23=93.40,
+        turnover_fy_21_22=85.50,
         similar_work_po_value=38.42,
         address="Shop 8 Krishna Complex Civil Lines, Indore - 452001",
         state="Madhya Pradesh",

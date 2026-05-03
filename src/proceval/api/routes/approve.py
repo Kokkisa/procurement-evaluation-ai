@@ -1,14 +1,15 @@
 """POST /approve/{eval_id} and POST /push/{eval_id} — approver actions.
 
-/approve generates the final PDF (Block 7 stub; Block 9 wires the formal
-generator). /push moves the record into the archive table — logically
-(status=complete_and_pushed) so the audit_log FK stays valid; the archive
-row holds a snapshot of the full evaluation + audit history.
+/approve assembles the full evaluation payload (metadata + technical +
+commercial + audit log + actor IDs) and hands it to the formal PDF
+generator (Block 9 ReportLab implementation). /push moves the record into
+the archive table — logically (status=complete_and_pushed) so the
+audit_log FK stays valid; the archive row holds a snapshot of the full
+evaluation + audit history.
 """
 
 from __future__ import annotations
 
-import json
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends
@@ -18,7 +19,9 @@ from ...audit import log_event
 from ...config import settings
 from ...db.models import Archive, AuditLog
 from ...pdf import generate_final_pdf
-from ...schemas.audit import ActorRole, AuditAction
+from ...schemas.audit import ActorRole, AuditAction, AuditEvent
+from ...schemas.evaluation import CommercialEvaluation, TechnicalEvaluation
+from ...schemas.tender import TenderMetadata
 from ..deps import get_db
 from ..schemas import ApproveRequest, ApproveResponse, PushRequest, PushResponse
 from ..state import EvalStatus, get_eval_or_404, require_status
@@ -35,9 +38,43 @@ def approve(
     ev = get_eval_or_404(db, eval_id)
     require_status(ev, EvalStatus.REVIEW_ACCEPTED)
 
+    # Reconstruct the typed payload for the PDF generator from the JSONB blobs.
+    metadata = TenderMetadata.model_validate(ev.tender_metadata_json or {})
+    technical = TechnicalEvaluation.model_validate(ev.technical_eval_json or {})
+    commercial = (
+        CommercialEvaluation.model_validate(ev.commercial_eval_json)
+        if ev.commercial_eval_json
+        else None
+    )
+
+    audit_rows = (
+        db.query(AuditLog)
+        .filter(AuditLog.evaluation_id == eval_id)
+        .order_by(AuditLog.occurred_at, AuditLog.id)
+        .all()
+    )
+    audit_events = [
+        AuditEvent(
+            evaluation_id=r.evaluation_id,
+            action=AuditAction(r.action),
+            actor_id=r.actor_id,
+            actor_role=ActorRole(r.actor_role),
+            notes=r.notes,
+            occurred_at=r.occurred_at,
+        )
+        for r in audit_rows
+    ]
+
     pdf_path = generate_final_pdf(
         eval_id=eval_id,
-        tender_number=ev.tender_number,
+        iteration=ev.iteration,
+        metadata=metadata,
+        technical=technical,
+        commercial=commercial,
+        audit_events=audit_events,
+        preparer_id=ev.preparer_id,
+        reviewer_id=ev.reviewer_id,
+        approver_id=body.actor_id,
         output_dir=settings.output_dir,
     )
 
@@ -110,7 +147,7 @@ def push(
         id=uuid4(),
         tender_number=ev.tender_number,
         full_record=full_record,
-        pdf_path=f"{settings.output_dir}/{ev.tender_number.replace('/', '_')}_technical_evaluation.pdf",
+        pdf_path=f"{settings.output_dir}/{ev.tender_number.replace('/', '_')}_iter{ev.iteration}_technical_evaluation.pdf",
     )
     db.add(archive)
     ev.status = EvalStatus.COMPLETE_AND_PUSHED

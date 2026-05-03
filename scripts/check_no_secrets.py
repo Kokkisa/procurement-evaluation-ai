@@ -18,9 +18,29 @@ import re
 import subprocess
 import sys
 
-# Anthropic admin and standard keys all begin with `sk-ant-`. Tail length
-# varies by key type; >=8 trailing chars catches everything in practice.
-SECRET_PATTERN = re.compile(r"sk-ant-[A-Za-z0-9_-]{8,}")
+# Patterns we refuse to commit. Each is anchored on the well-known prefix so
+# random base64 noise doesn't false-positive.
+#   sk-ant-      Anthropic API keys (standard + admin)
+#   lsv2_pt_     LangSmith personal-access tokens
+#   lsv2_sk_     LangSmith service-account keys
+SECRET_PATTERNS = [
+    re.compile(r"sk-ant-[A-Za-z0-9_-]{8,}"),
+    re.compile(r"lsv2_pt_[A-Za-z0-9_-]{8,}"),
+    re.compile(r"lsv2_sk_[A-Za-z0-9_-]{8,}"),
+]
+
+
+def _matched_pattern(content: str) -> str | None:
+    """Return a sanitized prefix label (never the secret value itself)."""
+    for pat in SECRET_PATTERNS:
+        m = pat.search(content)
+        if m:
+            full = m.group(0)
+            for prefix in ("sk-ant-", "lsv2_pt_", "lsv2_sk_"):
+                if full.startswith(prefix):
+                    return prefix + "*"
+            return "***"
+    return None
 
 
 def _staged_files() -> list[str]:
@@ -53,15 +73,16 @@ def main() -> int:
     if not files:
         return 0
 
-    hits: list[str] = []
+    hits: list[tuple[str, str]] = []
     for f in files:
-        if SECRET_PATTERN.search(_staged_content(f)):
-            hits.append(f)
+        prefix = _matched_pattern(_staged_content(f))
+        if prefix:
+            hits.append((f, prefix))
 
     if hits:
-        print("ERROR: Anthropic 'sk-ant-' secret detected in staged files:", file=sys.stderr)
-        for h in hits:
-            print(f"  - {h}", file=sys.stderr)
+        print("ERROR: secret-like token detected in staged files:", file=sys.stderr)
+        for path, prefix in hits:
+            print(f"  - {path}  (pattern {prefix})", file=sys.stderr)
         print("Refusing to commit. Remove the secret and re-stage.", file=sys.stderr)
         return 1
 

@@ -117,17 +117,18 @@ class VendorEvaluationAgent:
 
         return await asyncio.gather(*[_eval(c) for c in criteria])
 
-    def evaluate_vendor(
+    async def aevaluate_vendor_full(
         self,
         criteria: list[EvalCriterion],
         vendor_name: str,
         is_msme: bool,
         vendor_docs_text: str,
     ) -> VendorEvaluation:
-        """Sync convenience wrapper around ``aevaluate_vendor`` + the deterministic
-        post-processor. Returns a fully-formed ``VendorEvaluation``."""
-        evaluations = asyncio.run(
-            self.aevaluate_vendor(criteria, vendor_name, is_msme, vendor_docs_text)
+        """Async equivalent of ``evaluate_vendor`` — fan out per-criterion calls
+        and route through the deterministic post-processor. Use this from inside
+        an existing event loop (FastAPI route handlers, Streamlit async paths)."""
+        evaluations = await self.aevaluate_vendor(
+            criteria, vendor_name, is_msme, vendor_docs_text
         )
         verdict, remarks = compute_overall_verdict(
             vendor_name=vendor_name,
@@ -141,6 +142,19 @@ class VendorEvaluationAgent:
             criterion_evaluations=evaluations,
             overall_verdict=verdict,
             overall_remarks=remarks,
+        )
+
+    def evaluate_vendor(
+        self,
+        criteria: list[EvalCriterion],
+        vendor_name: str,
+        is_msme: bool,
+        vendor_docs_text: str,
+    ) -> VendorEvaluation:
+        """Sync convenience wrapper. Use ``aevaluate_vendor_full`` from inside
+        an existing event loop instead — ``asyncio.run`` cannot nest."""
+        return asyncio.run(
+            self.aevaluate_vendor_full(criteria, vendor_name, is_msme, vendor_docs_text)
         )
 
 

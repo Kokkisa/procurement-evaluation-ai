@@ -1,10 +1,34 @@
-"""Shared pytest fixtures.
+"""Shared pytest fixtures + test-session env shims.
 
-The PDF helpers here generate small documents on demand so unit tests don't
-depend on committed binary fixtures.
+Two things happen at import time, *before* any test module imports
+``proceval.config``:
+
+1. ``LANGCHAIN_TRACING_V2=false`` — ``proceval.config`` propagates LangSmith
+   env vars from .env into ``os.environ`` so LangChain's auto-tracer can
+   pick them up. During tests that means every mocked ``chain.ainvoke()``
+   would attempt a trace POST over the network. Forcing tracing off here
+   keeps the unit suite fast + offline. The propagation logic is still
+   exercised directly via the dedicated tests in test_config.py.
+
+2. ``LLM_INTER_BATCH_SLEEP_SECONDS=0`` — production .env values for the
+   throttle knob can be very conservative (e.g. 10s for Tier-1 safety).
+   Without this override, tests that exercise ``aevaluate_vendor``
+   without passing an explicit sleep value would inherit the production
+   throttle and a 5-criterion test would take ~40s. Tests that
+   *specifically* exercise the sleep behaviour pass their own
+   ``inter_batch_sleep_seconds`` value to the agent, so they still work.
+
+Both use ``setdefault`` so a deliberate shell-exported value
+(e.g. ``LANGCHAIN_TRACING_V2=true pytest ...`` for ad-hoc trace
+debugging) still wins.
 """
 
 from __future__ import annotations
+
+import os
+
+os.environ.setdefault("LANGCHAIN_TRACING_V2", "false")
+os.environ.setdefault("LLM_INTER_BATCH_SLEEP_SECONDS", "0")
 
 from pathlib import Path
 

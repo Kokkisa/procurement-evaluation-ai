@@ -24,11 +24,11 @@ The system is structured as a FastAPI service with five sequential lifecycle end
 flowchart LR
     A[Tender PDF + Vendor Docs] --> B[POST /ingest]
     B --> C[POST /confirm]
-    C --> D[POST /audit]
-    D --> E[Evaluation Agent]
+    C --> E[Evaluation Agent]
+    C --> D[GET /audit<br/>read-only]
     E -->|technical criteria| F[(PostgreSQL)]
     E -->|commercial criteria| F
-    D --> G[POST /review/accept]
+    C --> G[POST /review/accept]
     G --> H[POST /approve]
     H --> I[Final PDF Report]
     E -.trace.-> J[LangSmith]
@@ -85,7 +85,7 @@ python scripts/run_eval_test.py
 ```
 [1/5] POST /ingest                ... eval_id=DEMO_2026_HKP_001
 [2/5] POST /confirm/{eval_id}     ... metadata_confirmed
-[3/5] POST /audit/{eval_id}       ... iteration=1, tech_qualified=3/5, comm_qualified=0/5
+[3/5] GET  /audit/{eval_id}       ... iteration=1, tech_qualified=3/5, comm_qualified=0/5
 [4/5] POST /review/{eval_id}/accept ... status=review_accepted
 [5/5] POST /approve/{eval_id}     ... pdf_path=data/outputs/DEMO_2026_HKP_001_iter1_technical_evaluation.pdf
                                       pdf size = 13986 bytes

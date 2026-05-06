@@ -27,13 +27,11 @@ from pathlib import Path
 from typing import Iterable, Optional
 from uuid import UUID
 
-from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import (
-    KeepTogether,
     PageBreak,
     Paragraph,
     SimpleDocTemplate,
@@ -66,53 +64,100 @@ C_BORDER = HexColor("#cccccc")
 _base = getSampleStyleSheet()
 S = {
     "Title": ParagraphStyle(
-        "Title", parent=_base["Title"], fontSize=14, alignment=1,
-        textColor=C_HEADER_FG, spaceAfter=2,
+        "Title",
+        parent=_base["Title"],
+        fontSize=14,
+        alignment=1,
+        textColor=C_HEADER_FG,
+        spaceAfter=2,
     ),
     "TitleSub": ParagraphStyle(
-        "TitleSub", parent=_base["Normal"], fontSize=10, alignment=1,
-        textColor=C_HEADER_FG, spaceAfter=2,
+        "TitleSub",
+        parent=_base["Normal"],
+        fontSize=10,
+        alignment=1,
+        textColor=C_HEADER_FG,
+        spaceAfter=2,
     ),
     "TitleMeta": ParagraphStyle(
-        "TitleMeta", parent=_base["Normal"], fontSize=8, alignment=1,
+        "TitleMeta",
+        parent=_base["Normal"],
+        fontSize=8,
+        alignment=1,
         textColor=C_HEADER_FG,
     ),
     "Section": ParagraphStyle(
-        "Section", parent=_base["Heading2"], fontSize=11,
-        spaceBefore=10, spaceAfter=4, textColor=C_HEADER_BG,
+        "Section",
+        parent=_base["Heading2"],
+        fontSize=11,
+        spaceBefore=10,
+        spaceAfter=4,
+        textColor=C_HEADER_BG,
     ),
     "Body": ParagraphStyle(
-        "Body", parent=_base["BodyText"], fontSize=8, leading=10, spaceAfter=2,
+        "Body",
+        parent=_base["BodyText"],
+        fontSize=8,
+        leading=10,
+        spaceAfter=2,
     ),
     "Cell": ParagraphStyle(
-        "Cell", parent=_base["BodyText"], fontSize=7.5, leading=9,
+        "Cell",
+        parent=_base["BodyText"],
+        fontSize=7.5,
+        leading=9,
     ),
     "CellMono": ParagraphStyle(
-        "CellMono", parent=_base["BodyText"], fontSize=7.5, leading=9,
+        "CellMono",
+        parent=_base["BodyText"],
+        fontSize=7.5,
+        leading=9,
         fontName="Courier-Bold",
     ),
     "CellSmall": ParagraphStyle(
-        "CellSmall", parent=_base["BodyText"], fontSize=6.5, leading=8,
+        "CellSmall",
+        parent=_base["BodyText"],
+        fontSize=6.5,
+        leading=8,
         textColor=HexColor("#444444"),
     ),
     "OverallCell": ParagraphStyle(
-        "OverallCell", parent=_base["BodyText"], fontSize=8, leading=10,
+        "OverallCell",
+        parent=_base["BodyText"],
+        fontSize=8,
+        leading=10,
         textColor=C_HEADER_FG,
     ),
     "OverallVerdict": ParagraphStyle(
-        "OverallVerdict", parent=_base["BodyText"], fontSize=9, leading=11,
-        fontName="Helvetica-Bold", textColor=C_HEADER_FG,
+        "OverallVerdict",
+        parent=_base["BodyText"],
+        fontSize=9,
+        leading=11,
+        fontName="Helvetica-Bold",
+        textColor=C_HEADER_FG,
     ),
     "VendorHead": ParagraphStyle(
-        "VendorHead", parent=_base["BodyText"], fontSize=8, leading=10,
-        alignment=1, fontName="Helvetica-Bold", textColor=C_HEADER_FG,
+        "VendorHead",
+        parent=_base["BodyText"],
+        fontSize=8,
+        leading=10,
+        alignment=1,
+        fontName="Helvetica-Bold",
+        textColor=C_HEADER_FG,
     ),
     "ColHead": ParagraphStyle(
-        "ColHead", parent=_base["BodyText"], fontSize=8, leading=10,
-        fontName="Helvetica-Bold", textColor=C_HEADER_FG,
+        "ColHead",
+        parent=_base["BodyText"],
+        fontSize=8,
+        leading=10,
+        fontName="Helvetica-Bold",
+        textColor=C_HEADER_FG,
     ),
     "AuditCell": ParagraphStyle(
-        "AuditCell", parent=_base["BodyText"], fontSize=7, leading=9,
+        "AuditCell",
+        parent=_base["BodyText"],
+        fontSize=7,
+        leading=9,
     ),
 }
 
@@ -227,13 +272,20 @@ def _header_band(metadata: TenderMetadata, iteration: int, generated_at: datetim
 
 def _metadata_block(metadata: TenderMetadata) -> list:
     rows = [
-        ["Tender Floated Date", _fmt_date(metadata.tender_floated_date), "Issuing Office", _esc(metadata.location or "-")],
-        ["Bid Due Date", _fmt_date(metadata.tender_due_date), "Tender Number", _esc(metadata.tender_number)],
+        [
+            "Tender Floated Date",
+            _fmt_date(metadata.tender_floated_date),
+            "Issuing Office",
+            _esc(metadata.location or "-"),
+        ],
+        [
+            "Bid Due Date",
+            _fmt_date(metadata.tender_due_date),
+            "Tender Number",
+            _esc(metadata.tender_number),
+        ],
     ]
-    wrapped = [
-        [Paragraph(c, S["Body"]) if isinstance(c, str) else c for c in row]
-        for row in rows
-    ]
+    wrapped = [[Paragraph(c, S["Body"]) if isinstance(c, str) else c for c in row] for row in rows]
     t = Table(wrapped, colWidths=[42 * mm, 90 * mm, 35 * mm, 105 * mm])
     t.setStyle(
         TableStyle(
@@ -307,8 +359,6 @@ def _matrix_section(
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
     ]
 
-    by_id = {ev.criterion_id: ev for ve in vendor_evaluations for ev in ve.criterion_evaluations}
-
     for r, c in enumerate(criteria, start=1):
         row = [
             Paragraph(str(r), S["Cell"]),
@@ -316,14 +366,10 @@ def _matrix_section(
             Paragraph(_format_requirement(c), S["Cell"]),
         ]
         for col_idx, ve in enumerate(vendor_evaluations):
-            cell_eval = next(
-                (e for e in ve.criterion_evaluations if e.criterion_id == c.id), None
-            )
+            cell_eval = next((e for e in ve.criterion_evaluations if e.criterion_id == c.id), None)
             cell_para, bg = _format_cell(c, cell_eval)
             row.append(cell_para)
-            cell_styles.append(
-                ("BACKGROUND", (3 + col_idx, r), (3 + col_idx, r), bg)
-            )
+            cell_styles.append(("BACKGROUND", (3 + col_idx, r), (3 + col_idx, r), bg))
         rows.append(row)
 
     # OVERALL REMARKS row (combines first 3 columns)
@@ -341,7 +387,9 @@ def _matrix_section(
         )
         overall_row.append(cell_para)
         bg = C_OVERALL_PASS if verdict_text == "ACCEPTED" else C_OVERALL_FAIL
-        cell_styles.append(("BACKGROUND", (3 + col_idx, overall_row_idx), (3 + col_idx, overall_row_idx), bg))
+        cell_styles.append(
+            ("BACKGROUND", (3 + col_idx, overall_row_idx), (3 + col_idx, overall_row_idx), bg)
+        )
     rows.append(overall_row)
     cell_styles.extend(
         [
@@ -376,15 +424,25 @@ def _audit_section(audit_events: Iterable[AuditEvent]) -> list:
     rows = [header]
     for i, ev in enumerate(events, start=1):
         when = ev.occurred_at.strftime("%Y-%m-%d %H:%M:%S") if ev.occurred_at else "-"
-        notes = (ev.notes or "")
+        notes = ev.notes or ""
         if len(notes) > 200:
             notes = notes[:197] + "..."
         rows.append(
             [
                 Paragraph(str(i), S["AuditCell"]),
                 Paragraph(when, S["AuditCell"]),
-                Paragraph(f"<b>{_esc(ev.action.value if hasattr(ev.action, 'value') else str(ev.action))}</b>", S["AuditCell"]),
-                Paragraph(_esc(ev.actor_role.value if hasattr(ev.actor_role, 'value') else str(ev.actor_role)), S["AuditCell"]),
+                Paragraph(
+                    f"<b>{_esc(ev.action.value if hasattr(ev.action, 'value') else str(ev.action))}</b>",
+                    S["AuditCell"],
+                ),
+                Paragraph(
+                    _esc(
+                        ev.actor_role.value
+                        if hasattr(ev.actor_role, "value")
+                        else str(ev.actor_role)
+                    ),
+                    S["AuditCell"],
+                ),
                 Paragraph(_esc(ev.actor_id), S["AuditCell"]),
                 Paragraph(_esc(notes), S["AuditCell"]),
             ]
@@ -476,7 +534,7 @@ def _format_cell(criterion: EvalCriterion, cell_eval) -> tuple[Paragraph, HexCol
         return Paragraph("<i>no result</i>", S["Cell"]), C_NA
 
     verdict = (cell_eval.verdict or "").upper()
-    reasoning = (cell_eval.reasoning or "")
+    reasoning = cell_eval.reasoning or ""
     short_reason = reasoning[:120] + ("..." if len(reasoning) > 120 else "")
 
     if verdict == "PROVIDED":
@@ -532,9 +590,4 @@ def _esc(s: object) -> str:
     """Minimal HTML escape for ReportLab Paragraph markup."""
     if s is None:
         return ""
-    return (
-        str(s)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
+    return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

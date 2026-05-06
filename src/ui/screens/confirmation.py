@@ -45,9 +45,7 @@ def render() -> None:
             metadata["tender_due_date"] = st.text_input(
                 "Due Date", value=metadata.get("tender_due_date") or ""
             )
-            metadata["location"] = st.text_input(
-                "Location", value=metadata.get("location") or ""
-            )
+            metadata["location"] = st.text_input("Location", value=metadata.get("location") or "")
 
     with tab_vendors:
         if not vendors:

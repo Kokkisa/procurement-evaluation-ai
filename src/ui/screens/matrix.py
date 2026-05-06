@@ -16,8 +16,7 @@ def render() -> None:
     _render_header()
     _render_matrices()
     st.info(
-        "Read-only view. Switch role in the sidebar to Reviewer to accept / "
-        "reject this evaluation."
+        "Read-only view. Switch role in the sidebar to Reviewer to accept / reject this evaluation."
     )
 
 
@@ -50,9 +49,7 @@ def _render_matrices() -> None:
         )
     with tab_comm:
         if commercial and commercial.get("rubric"):
-            st.caption(
-                f"Qualified: {commercial['qualified_count']} / {commercial['total_count']}"
-            )
+            st.caption(f"Qualified: {commercial['qualified_count']} / {commercial['total_count']}")
             render_matrix(
                 commercial["rubric"]["commercial_criteria"],
                 commercial["vendor_evaluations"],

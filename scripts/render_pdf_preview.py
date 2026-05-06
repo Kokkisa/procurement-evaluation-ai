@@ -29,15 +29,12 @@ OUT_DIR = REPO_ROOT / "data" / "outputs"
 
 
 def _crit(id_, name, type_, **kw):
-    return EvalCriterion(
-        id=id_, name=name, description=name + " requirement.", type=type_, **kw
-    )
+    return EvalCriterion(id=id_, name=name, description=name + " requirement.", type=type_, **kw)
 
 
 def _ev(cid, verdict, **k):
     return CriterionEvaluation(
-        criterion_id=cid, verdict=verdict, reasoning=k.pop("reason", "ok"),
-        confidence=0.95, **k
+        criterion_id=cid, verdict=verdict, reasoning=k.pop("reason", "ok"), confidence=0.95, **k
     )
 
 
@@ -54,24 +51,57 @@ def main() -> None:
 
     technical_criteria = [
         _crit(
-            "PQC_FIN_TURNOVER", "Average Annual Turnover", CriterionType.FINANCIAL,
-            threshold_value=100.0, msme_relaxation_value=85.0,
-            aggregation_rule="average", source_clause="PQC-1",
+            "PQC_FIN_TURNOVER",
+            "Average Annual Turnover",
+            CriterionType.FINANCIAL,
+            threshold_value=100.0,
+            msme_relaxation_value=85.0,
+            aggregation_rule="average",
+            source_clause="PQC-1",
         ),
         _crit(
-            "PQC_TECH_SIMILAR_WORK", "Similar Works Experience", CriterionType.TECHNICAL,
-            threshold_value=100.0, msme_relaxation_value=85.0,
-            aggregation_rule="single_max", source_clause="PQC-2",
+            "PQC_TECH_SIMILAR_WORK",
+            "Similar Works Experience",
+            CriterionType.TECHNICAL,
+            threshold_value=100.0,
+            msme_relaxation_value=85.0,
+            aggregation_rule="single_max",
+            source_clause="PQC-2",
         ),
         _crit("PQC_DOC_PAN", "PAN Card Submission", CriterionType.DOCUMENT, source_clause="PQC-3"),
         _crit("PQC_DOC_GST", "GST Registration", CriterionType.DOCUMENT, source_clause="PQC-4"),
-        _crit("PQC_DOC_UDYAM_MSME", "Udyam Registration", CriterionType.DOCUMENT, source_clause="PQC-5"),
-        _crit("PQC_DOC_BLACKLIST_DECL", "Blacklisting Declaration", CriterionType.DOCUMENT, source_clause="PQC-6"),
-        _crit("PQC_DOC_BIDDER_RESPONSE", "Bidder Response Form", CriterionType.DOCUMENT, source_clause="PQC-7"),
+        _crit(
+            "PQC_DOC_UDYAM_MSME",
+            "Udyam Registration",
+            CriterionType.DOCUMENT,
+            source_clause="PQC-5",
+        ),
+        _crit(
+            "PQC_DOC_BLACKLIST_DECL",
+            "Blacklisting Declaration",
+            CriterionType.DOCUMENT,
+            source_clause="PQC-6",
+        ),
+        _crit(
+            "PQC_DOC_BIDDER_RESPONSE",
+            "Bidder Response Form",
+            CriterionType.DOCUMENT,
+            source_clause="PQC-7",
+        ),
     ]
     commercial_criteria = [
-        _crit("COMM_PPE", "Personal Protective Equipment", CriterionType.COMMERCIAL, source_clause="Section 4"),
-        _crit("COMM_EPF_ESI", "EPF / ESI Compliance", CriterionType.COMMERCIAL, source_clause="Section 4"),
+        _crit(
+            "COMM_PPE",
+            "Personal Protective Equipment",
+            CriterionType.COMMERCIAL,
+            source_clause="Section 4",
+        ),
+        _crit(
+            "COMM_EPF_ESI",
+            "EPF / ESI Compliance",
+            CriterionType.COMMERCIAL,
+            source_clause="Section 4",
+        ),
     ]
     rubric = TenderRubric(
         metadata=metadata,
@@ -83,26 +113,48 @@ def main() -> None:
         evs = []
         for c in technical_criteria:
             if c.id == "PQC_FIN_TURNOVER":
-                evs.append(_ev(
-                    c.id, "VALUE",
-                    extracted_value=("88.23 LAKHS (3-yr avg, MSME)" if msme else "238.67 LAKHS (3-yr avg)"),
-                    threshold_met=True, reason="From audited B/S FY 23-24/22-23/21-22",
-                ))
+                evs.append(
+                    _ev(
+                        c.id,
+                        "VALUE",
+                        extracted_value=(
+                            "88.23 LAKHS (3-yr avg, MSME)" if msme else "238.67 LAKHS (3-yr avg)"
+                        ),
+                        threshold_met=True,
+                        reason="From audited B/S FY 23-24/22-23/21-22",
+                    )
+                )
             elif c.id == "PQC_TECH_SIMILAR_WORK":
-                evs.append(_ev(
-                    c.id, "VALUE", extracted_value=sw_value, threshold_met=sw_met,
-                    reason="Single PO with counter-party",
-                ))
+                evs.append(
+                    _ev(
+                        c.id,
+                        "VALUE",
+                        extracted_value=sw_value,
+                        threshold_met=sw_met,
+                        reason="Single PO with counter-party",
+                    )
+                )
             elif c.id == "PQC_DOC_BLACKLIST_DECL" and missing_blacklist:
-                evs.append(_ev(c.id, "NOT_PROVIDED", reason="No blacklisting declaration found in submission folder"))
+                evs.append(
+                    _ev(
+                        c.id,
+                        "NOT_PROVIDED",
+                        reason="No blacklisting declaration found in submission folder",
+                    )
+                )
             elif c.id == "PQC_DOC_UDYAM_MSME" and not msme:
                 evs.append(_ev(c.id, "PROVIDED", reason="N/A (non-MSME, no relaxation claimed)"))
             else:
                 evs.append(_ev(c.id, "PROVIDED", reason=f"{c.name.lower()} present in submission"))
-        comm = [_ev(c.id, "PROVIDED", reason="accepted in bidder response form") for c in commercial_criteria]
+        comm = [
+            _ev(c.id, "PROVIDED", reason="accepted in bidder response form")
+            for c in commercial_criteria
+        ]
         return (
             VendorEvaluation(
-                vendor_name=name, is_msme=msme, criterion_evaluations=evs,
+                vendor_name=name,
+                is_msme=msme,
+                criterion_evaluations=evs,
                 overall_verdict="ACCEPTED" if accept else "REJECTED",
                 overall_remarks=(
                     "All 7 evaluated criteria are satisfied. Vendor is technically qualified."
@@ -122,47 +174,88 @@ def main() -> None:
         _vendor("TEJASWINI HOUSEKEEPING ENTERPRISES", False, True, "164.20 LAKHS", True),
         _vendor("SHRI MANGALAM SAFAI WORKS", True, False, "38.42 LAKHS", False),
         _vendor("PRABHAT DEEP SANITATION SOLUTIONS", False, True, "192.70 LAKHS", True),
-        _vendor("RAGHAVENDRA MAINTENANCE WORKS", False, False, "211.40 LAKHS", True, missing_blacklist=True),
+        _vendor(
+            "RAGHAVENDRA MAINTENANCE WORKS",
+            False,
+            False,
+            "211.40 LAKHS",
+            True,
+            missing_blacklist=True,
+        ),
     ]
     tech_evals = [t for t, _ in pairs]
     comm_evals = [
         VendorEvaluation(
-            vendor_name=t.vendor_name, is_msme=t.is_msme, criterion_evaluations=c,
-            overall_verdict="ACCEPTED", overall_remarks="All commercial criteria accepted.",
+            vendor_name=t.vendor_name,
+            is_msme=t.is_msme,
+            criterion_evaluations=c,
+            overall_verdict="ACCEPTED",
+            overall_remarks="All commercial criteria accepted.",
         )
         for t, c in pairs
     ]
 
     technical = TechnicalEvaluation(
-        rubric=rubric, vendor_evaluations=tech_evals,
+        rubric=rubric,
+        vendor_evaluations=tech_evals,
         qualified_count=sum(1 for e in tech_evals if e.overall_verdict == "ACCEPTED"),
         total_count=len(tech_evals),
         summary_remarks=f"{sum(1 for e in tech_evals if e.overall_verdict == 'ACCEPTED')} of {len(tech_evals)} participated vendors are technically qualified.",
     )
     commercial = CommercialEvaluation(
-        rubric=rubric, vendor_evaluations=comm_evals,
-        qualified_count=len(comm_evals), total_count=len(comm_evals),
+        rubric=rubric,
+        vendor_evaluations=comm_evals,
+        qualified_count=len(comm_evals),
+        total_count=len(comm_evals),
     )
 
     base = datetime(2026, 5, 2, 12, 0, tzinfo=timezone.utc)
     audit_events = [
-        AuditEvent(evaluation_id=eval_id, action=a, actor_id=actor, actor_role=role, notes=notes,
-                   occurred_at=base.replace(minute=i))
-        for i, (a, role, actor, notes) in enumerate([
-            (AuditAction.UPLOADED, ActorRole.PREPARER, "preparer1", "tender pdf + 5 vendor folder(s)"),
-            (AuditAction.METADATA_EXTRACTED, ActorRole.SYSTEM, "preparer1", "tender_number=DEMO/2026/HKP/001"),
-            (AuditAction.METADATA_CONFIRMED, ActorRole.PREPARER, "preparer1", None),
-            (AuditAction.EVALUATION_GENERATED, ActorRole.SYSTEM, "preparer1", "iteration=1 tech_qualified=3/5 comm_qualified=5/5"),
-            (AuditAction.SENT_FOR_REVIEW, ActorRole.PREPARER, "preparer1", None),
-            (AuditAction.REVIEW_ACCEPTED, ActorRole.REVIEWER, "reviewer1", "iteration=1"),
-        ])
+        AuditEvent(
+            evaluation_id=eval_id,
+            action=a,
+            actor_id=actor,
+            actor_role=role,
+            notes=notes,
+            occurred_at=base.replace(minute=i),
+        )
+        for i, (a, role, actor, notes) in enumerate(
+            [
+                (
+                    AuditAction.UPLOADED,
+                    ActorRole.PREPARER,
+                    "preparer1",
+                    "tender pdf + 5 vendor folder(s)",
+                ),
+                (
+                    AuditAction.METADATA_EXTRACTED,
+                    ActorRole.SYSTEM,
+                    "preparer1",
+                    "tender_number=DEMO/2026/HKP/001",
+                ),
+                (AuditAction.METADATA_CONFIRMED, ActorRole.PREPARER, "preparer1", None),
+                (
+                    AuditAction.EVALUATION_GENERATED,
+                    ActorRole.SYSTEM,
+                    "preparer1",
+                    "iteration=1 tech_qualified=3/5 comm_qualified=5/5",
+                ),
+                (AuditAction.SENT_FOR_REVIEW, ActorRole.PREPARER, "preparer1", None),
+                (AuditAction.REVIEW_ACCEPTED, ActorRole.REVIEWER, "reviewer1", "iteration=1"),
+            ]
+        )
     ]
 
     pdf = generate_final_pdf(
-        eval_id=eval_id, iteration=1, metadata=metadata,
-        technical=technical, commercial=commercial,
+        eval_id=eval_id,
+        iteration=1,
+        metadata=metadata,
+        technical=technical,
+        commercial=commercial,
         audit_events=audit_events,
-        preparer_id="preparer1", reviewer_id="reviewer1", approver_id="approver1",
+        preparer_id="preparer1",
+        reviewer_id="reviewer1",
+        approver_id="approver1",
         output_dir=OUT_DIR,
         generated_at=datetime(2026, 5, 2, 14, 30, tzinfo=timezone.utc),
     )

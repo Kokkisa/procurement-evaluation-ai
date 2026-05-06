@@ -64,21 +64,18 @@ def _extract_page(pdf_path: Path, page, page_number: int) -> str:
     body = page.extract_text() or ""
     tables_text: list[str] = []
     for table in page.extract_tables() or []:
-        tables_text.append(
-            "\n".join("\t".join(cell or "" for cell in row) for row in table)
-        )
+        tables_text.append("\n".join("\t".join(cell or "" for cell in row) for row in table))
     combined = body
     if tables_text:
         combined = combined + "\n" + "\n".join(tables_text)
 
     body_chars = len(combined.strip())
-    if (
-        settings.ocr_enabled
-        and body_chars < settings.ocr_fallback_threshold
-    ):
+    if settings.ocr_enabled and body_chars < settings.ocr_fallback_threshold:
         logger.info(
             "page %d: text layer thin (%d chars < threshold %d) -> OCR",
-            page_number, body_chars, settings.ocr_fallback_threshold,
+            page_number,
+            body_chars,
+            settings.ocr_fallback_threshold,
         )
         ocr_text = _ocr_page(pdf_path, page_number, settings.ocr_dpi)
         return normalize_ocr_text(ocr_text)

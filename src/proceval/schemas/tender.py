@@ -12,9 +12,7 @@ class TenderMetadata(BaseModel):
     tender_name: str = Field(..., description="Subject/title of the tender")
     tender_floated_date: Optional[date] = None
     tender_due_date: Optional[date] = None
-    issuing_organization: str = Field(
-        ..., description="e.g., Hindustan Petroleum Corporation Limited"
-    )
+    issuing_organization: str = Field(..., description="e.g., Demo Procurement Corporation Limited")
     location: Optional[str] = Field(None, description="e.g., issuing plant or office name")
 
 
@@ -39,9 +37,7 @@ class EvalCriterion(BaseModel):
     aggregation_rule: Optional[Literal["single_max", "sum", "average"]] = Field(
         None, description="For multi-document criteria like similar works"
     )
-    source_clause: Optional[str] = Field(
-        None, description="Section/clause reference in tender doc"
-    )
+    source_clause: Optional[str] = Field(None, description="Section/clause reference in tender doc")
 
 
 class TenderRubric(BaseModel):

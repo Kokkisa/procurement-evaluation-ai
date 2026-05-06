@@ -101,10 +101,7 @@ def test_llm_throttle_defaults_when_absent(_isolated_env, tmp_path: Path):
 def test_llm_throttle_overridable_via_env_file(_isolated_env, tmp_path: Path):
     """A higher tier can raise the cap and lower the sleep without code changes."""
     env_file = tmp_path / ".env"
-    env_file.write_text(
-        "LLM_MAX_CONCURRENCY=8\n"
-        "LLM_INTER_BATCH_SLEEP_SECONDS=0.25\n"
-    )
+    env_file.write_text("LLM_MAX_CONCURRENCY=8\nLLM_INTER_BATCH_SLEEP_SECONDS=0.25\n")
 
     s = Settings(_env_file=str(env_file))
 

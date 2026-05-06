@@ -26,7 +26,11 @@ class _StubLLM:
         self.schemas_used.append(schema)
 
         def _fn(prompt_value):
-            text = prompt_value.to_string() if hasattr(prompt_value, "to_string") else str(prompt_value)
+            text = (
+                prompt_value.to_string()
+                if hasattr(prompt_value, "to_string")
+                else str(prompt_value)
+            )
             self.calls.append(text)
             if not self._results:
                 raise RuntimeError("_StubLLM exhausted")

@@ -25,7 +25,7 @@ from typing import Any
 import pytest
 from langchain_core.callbacks import BaseCallbackHandler
 
-from proceval.agents import VendorEvaluationAgent, compute_overall_verdict
+from proceval.agents import VendorEvaluationAgent
 from proceval.agents.evaluation_agent import load_vendor_documents
 from proceval.config import settings
 from proceval.ingestion.pdf_parser import extract_text
@@ -101,9 +101,7 @@ CORE_CRITERIA: list[EvalCriterion] = [
     EvalCriterion(
         id="PQC_DOC_BLACKLIST_DECL",
         name="Blacklisting Declaration",
-        description=(
-            "Signed declaration on bidder letterhead confirming non-blacklisting."
-        ),
+        description=("Signed declaration on bidder letterhead confirming non-blacklisting."),
         type=CriterionType.DOCUMENT,
         source_clause="PQC-6 (Document)",
     ),
@@ -117,11 +115,11 @@ CORE_CRITERIA: list[EvalCriterion] = [
 ]
 
 VENDORS = [
-    ("aroha_facility_services",            "AROHA FACILITY SERVICES PVT LTD",     True,  "ACCEPTED"),
-    ("tejaswini_housekeeping_enterprises", "TEJASWINI HOUSEKEEPING ENTERPRISES",  False, "ACCEPTED"),
-    ("shri_mangalam_safai_works",          "SHRI MANGALAM SAFAI WORKS",           True,  "REJECTED"),
-    ("prabhat_deep_sanitation_solutions",  "PRABHAT DEEP SANITATION SOLUTIONS",   False, "ACCEPTED"),
-    ("raghavendra_maintenance_works",      "RAGHAVENDRA MAINTENANCE WORKS",       False, "REJECTED"),
+    ("aroha_facility_services", "AROHA FACILITY SERVICES PVT LTD", True, "ACCEPTED"),
+    ("tejaswini_housekeeping_enterprises", "TEJASWINI HOUSEKEEPING ENTERPRISES", False, "ACCEPTED"),
+    ("shri_mangalam_safai_works", "SHRI MANGALAM SAFAI WORKS", True, "REJECTED"),
+    ("prabhat_deep_sanitation_solutions", "PRABHAT DEEP SANITATION SOLUTIONS", False, "ACCEPTED"),
+    ("raghavendra_maintenance_works", "RAGHAVENDRA MAINTENANCE WORKS", False, "REJECTED"),
 ]
 
 
@@ -130,13 +128,13 @@ VENDORS = [
 # relevant to that one criterion. This keeps per-call input ~1.5K tokens
 # (down from ~5K) and avoids tripping low-tier rate limits.
 RELEVANT_DOC_PATTERNS: dict[str, list[str]] = {
-    "PQC_FIN_TURNOVER":          ["audited_balance_sheet_*.pdf"],
-    "PQC_TECH_SIMILAR_WORK":     ["purchase_order_*.pdf", "work_completion_certificate_*.pdf"],
-    "PQC_DOC_PAN":               ["pan_card.pdf"],
-    "PQC_DOC_GST":               ["gst_certificate.pdf"],
-    "PQC_DOC_UDYAM_MSME":        ["udyam_registration.pdf"],
-    "PQC_DOC_BLACKLIST_DECL":    ["blacklist_declaration.pdf"],
-    "PQC_DOC_BIDDER_RESPONSE":   ["bidder_response_form.pdf"],
+    "PQC_FIN_TURNOVER": ["audited_balance_sheet_*.pdf"],
+    "PQC_TECH_SIMILAR_WORK": ["purchase_order_*.pdf", "work_completion_certificate_*.pdf"],
+    "PQC_DOC_PAN": ["pan_card.pdf"],
+    "PQC_DOC_GST": ["gst_certificate.pdf"],
+    "PQC_DOC_UDYAM_MSME": ["udyam_registration.pdf"],
+    "PQC_DOC_BLACKLIST_DECL": ["blacklist_declaration.pdf"],
+    "PQC_DOC_BIDDER_RESPONSE": ["bidder_response_form.pdf"],
 }
 
 
@@ -154,8 +152,7 @@ def build_focused_docs_text(vendor_dir: Path, criterion: EvalCriterion) -> str:
     header = f"Vendor's submitted documents (full filename listing):\n{listing}\n"
     if not matched:
         return (
-            header
-            + "\n[No documents matching the expected pattern for this criterion "
+            header + "\n[No documents matching the expected pattern for this criterion "
             "are present in the submission.]"
         )
 
@@ -179,9 +176,7 @@ async def _evaluate_vendor_with_focused_docs(
     aggregator. ``build_focused_docs_text`` + ``RELEVANT_DOC_PATTERNS`` above
     are kept for reference / ad-hoc inspection but no longer used here."""
     documents = load_vendor_documents(vendor_dir)
-    return await agent.aevaluate_vendor_full(
-        criteria, vendor_name, is_msme, documents
-    )
+    return await agent.aevaluate_vendor_full(criteria, vendor_name, is_msme, documents)
 
 
 class TokenCounter(BaseCallbackHandler):
@@ -192,7 +187,7 @@ class TokenCounter(BaseCallbackHandler):
 
     def on_llm_end(self, response: Any, **_kwargs: Any) -> None:
         self.calls += 1
-        for gen_list in (response.generations or []):
+        for gen_list in response.generations or []:
             for gen in gen_list:
                 msg = getattr(gen, "message", None)
                 usage = getattr(msg, "usage_metadata", None) if msg else None
@@ -205,10 +200,9 @@ class TokenCounter(BaseCallbackHandler):
         self.output_tokens += usage.get("output_tokens", 0)
 
     def cost_usd(self) -> float:
-        return (
-            (self.input_tokens / 1_000_000) * PRICE_INPUT_PER_MTOK
-            + (self.output_tokens / 1_000_000) * PRICE_OUTPUT_PER_MTOK
-        )
+        return (self.input_tokens / 1_000_000) * PRICE_INPUT_PER_MTOK + (
+            self.output_tokens / 1_000_000
+        ) * PRICE_OUTPUT_PER_MTOK
 
 
 @pytest.fixture(scope="module")
@@ -255,9 +249,7 @@ def test_aroha_passes_via_msme_relaxation(all_vendor_evaluations):
     """AROHA's 88.23-lakh turnover passes only because of MSME relaxation
     (>= 85 relaxed but < 100 standard). Verify the per-criterion result."""
     aroha = all_vendor_evaluations["aroha_facility_services"]
-    turnover = next(
-        e for e in aroha.criterion_evaluations if e.criterion_id == "PQC_FIN_TURNOVER"
-    )
+    turnover = next(e for e in aroha.criterion_evaluations if e.criterion_id == "PQC_FIN_TURNOVER")
     assert turnover.verdict == "VALUE"
     assert turnover.threshold_met is True, (
         f"AROHA turnover should pass (88.23 >= 85 MSME); got threshold_met={turnover.threshold_met!r} "
@@ -279,9 +271,7 @@ def test_shri_mangalam_fails_similar_work_specifically(all_vendor_evaluations):
         f"got threshold_met={similar_work.threshold_met!r}, extracted_value={similar_work.extracted_value!r}"
     )
 
-    turnover = next(
-        e for e in shri.criterion_evaluations if e.criterion_id == "PQC_FIN_TURNOVER"
-    )
+    turnover = next(e for e in shri.criterion_evaluations if e.criterion_id == "PQC_FIN_TURNOVER")
     assert turnover.threshold_met is True, (
         f"SHRI MANGALAM turnover should pass (92.70 >= 85 MSME); got threshold_met={turnover.threshold_met!r}"
     )
@@ -310,4 +300,6 @@ def test_cost_summary(counter: TokenCounter, all_vendor_evaluations):
     print(f"  Input tokens    : {counter.input_tokens:,}")
     print(f"  Output tokens   : {counter.output_tokens:,}")
     print(f"  Estimated cost  : ${counter.cost_usd():.4f} USD")
-    print(f"  (rates: ${PRICE_INPUT_PER_MTOK:.2f}/MTok input, ${PRICE_OUTPUT_PER_MTOK:.2f}/MTok output)")
+    print(
+        f"  (rates: ${PRICE_INPUT_PER_MTOK:.2f}/MTok input, ${PRICE_OUTPUT_PER_MTOK:.2f}/MTok output)"
+    )

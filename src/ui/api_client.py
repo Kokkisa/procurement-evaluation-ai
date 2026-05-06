@@ -9,7 +9,7 @@ the UI at a non-default API host.
 from __future__ import annotations
 
 import os
-from typing import Any, BinaryIO
+from typing import Any
 
 import httpx
 

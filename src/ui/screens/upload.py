@@ -16,9 +16,7 @@ def render() -> None:
     )
 
     if st.session_state.role != "Preparer":
-        st.warning(
-            "Only the Preparer role can start a new evaluation. Switch role in the sidebar."
-        )
+        st.warning("Only the Preparer role can start a new evaluation. Switch role in the sidebar.")
         return
 
     with st.form("upload-form", clear_on_submit=False):

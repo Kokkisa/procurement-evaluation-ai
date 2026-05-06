@@ -30,8 +30,8 @@ def _sample_metadata() -> TenderMetadata:
         tender_name="Cylinder Handling Services",
         tender_floated_date=date(2024, 5, 1),
         tender_due_date=date(2024, 5, 21),
-        issuing_organization="Hindustan Petroleum Corporation Limited",
-        location="HPCL Visakh Refinery",
+        issuing_organization="Demo Procurement Corporation Limited",
+        location="Plant 1",
     )
 
 

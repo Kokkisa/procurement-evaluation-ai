@@ -5,7 +5,7 @@ Specifically extract:
 - tender_name: the subject / title of the tender (often labelled "Tender Subject" or "Subject").
 - tender_floated_date: the date the tender was published / floated. Use ISO format YYYY-MM-DD.
 - tender_due_date: the deadline for bid submission. Use ISO format YYYY-MM-DD.
-- issuing_organization: the buyer / issuing entity (e.g., "Hindustan Petroleum Corporation Limited", "Demo Procurement Corporation Limited"). Often appears at the top of the cover page.
+- issuing_organization: the buyer / issuing entity (e.g., "Demo Procurement Corporation Limited" or any public-sector organisation name). Often appears at the top of the cover page.
 - location: the issuing plant / office location, if stated.
 
 Date conversion: "10-Apr-2026" -> "2026-04-10". For dates with time components like "30-Apr-2026, 15:00 hrs IST", extract only the date portion.

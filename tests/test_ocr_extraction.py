@@ -95,9 +95,7 @@ def test_ocr_path_triggered_when_text_layer_thin(make_pdf, tmp_path: Path, monke
     pdf = make_pdf("thin.pdf", [["x"]])  # 1 char body, well below threshold
 
     fake_ocr = "OCR-PROVIDED-TEXT abc 1234 from scan"
-    with patch(
-        "proceval.ingestion.pdf_parser._ocr_page", return_value=fake_ocr
-    ) as mocked:
+    with patch("proceval.ingestion.pdf_parser._ocr_page", return_value=fake_ocr) as mocked:
         text, pages = extract_text(pdf)
 
     assert pages == 1

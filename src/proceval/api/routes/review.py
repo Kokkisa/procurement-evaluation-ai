@@ -55,9 +55,7 @@ def review_accept(
     )
     db.commit()
 
-    return ReviewAcceptResponse(
-        eval_id=eval_id, status=ev.status, reviewer_id=body.actor_id
-    )
+    return ReviewAcceptResponse(eval_id=eval_id, status=ev.status, reviewer_id=body.actor_id)
 
 
 @router.post("/review/{eval_id}/reject", response_model=ReviewRejectResponse)

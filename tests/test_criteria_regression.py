@@ -107,7 +107,6 @@ def test_core_types_match(extracted_rubric, ground_truth):
             continue
         if actual.type.value != expected["type"]:
             failures.append(
-                f"  {expected['id']}: expected type={expected['type']!r}, "
-                f"got {actual.type.value!r}"
+                f"  {expected['id']}: expected type={expected['type']!r}, got {actual.type.value!r}"
             )
     assert not failures, "Core type mismatches:\n" + "\n".join(failures)

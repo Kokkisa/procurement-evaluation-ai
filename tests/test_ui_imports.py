@@ -87,9 +87,7 @@ def test_api_client_review_reject_posts_feedback_text():
         mock_post.return_value = MagicMock(
             json=lambda: {"iteration": 2}, raise_for_status=lambda: None
         )
-        api_client.review_reject(
-            eval_id="abc", actor_id="rev1", feedback_text="Re-check vendor 3"
-        )
+        api_client.review_reject(eval_id="abc", actor_id="rev1", feedback_text="Re-check vendor 3")
 
     args, kwargs = mock_post.call_args
     assert "/review/abc/reject" in args[0]
@@ -172,8 +170,8 @@ def test_matrix_table_emits_classes_for_each_verdict_kind():
     assert 'class="proceval-matrix"' in html
     assert "AROHA" in html
     assert "msme-badge" in html  # MSME flag rendered
-    assert "cell-pass" in html   # PROVIDED + VALUE-with-threshold-met
-    assert "cell-fail" in html   # NOT_PROVIDED
+    assert "cell-pass" in html  # PROVIDED + VALUE-with-threshold-met
+    assert "cell-fail" in html  # NOT_PROVIDED
     assert "cell-partial" in html
     assert "OVERALL REMARKS" in html
     assert "ACCEPTED" in html

@@ -90,9 +90,7 @@ def _crit(
     type_: CriterionType = CriterionType.DOCUMENT,
     **kw,
 ) -> EvalCriterion:
-    return EvalCriterion(
-        id=id_, name=name, description=f"{name} requirement.", type=type_, **kw
-    )
+    return EvalCriterion(id=id_, name=name, description=f"{name} requirement.", type=type_, **kw)
 
 
 def _doc(filename: str, text: str = "doc body text") -> VendorDocument:
@@ -182,7 +180,12 @@ def test_aggregate_mixed_any_meets_wins():
         threshold_value=100.0,
     )
     verdicts = [
-        _vpd("DOES_NOT_MEET", extracted_value="50 L", reasoning="too small", source_document="po_a.pdf"),
+        _vpd(
+            "DOES_NOT_MEET",
+            extracted_value="50 L",
+            reasoning="too small",
+            source_document="po_a.pdf",
+        ),
         _vpd("NOT_APPLICABLE", reasoning="not relevant", source_document="pan.pdf"),
         _vpd(
             "MEETS",
@@ -190,7 +193,12 @@ def test_aggregate_mixed_any_meets_wins():
             reasoning="Single PO with MERIDIAN MANUFACTURING comfortably exceeds the threshold.",
             source_document="po_meridian.pdf",
         ),
-        _vpd("DOES_NOT_MEET", extracted_value="20 L", reasoning="even smaller", source_document="po_c.pdf"),
+        _vpd(
+            "DOES_NOT_MEET",
+            extracted_value="20 L",
+            reasoning="even smaller",
+            source_document="po_c.pdf",
+        ),
     ]
     result = VendorEvaluationAgent.aggregate_document_verdicts(crit, verdicts)
 
@@ -372,9 +380,7 @@ def test_aevaluate_vendor_fans_out_across_criteria_and_documents():
     stub = _MappingStubLLM({c.id: _vpd("MEETS", source_document="placeholder") for c in criteria})
     agent = VendorEvaluationAgent(model=stub, inter_batch_sleep_seconds=0)
 
-    results = asyncio.run(
-        agent.aevaluate_vendor(criteria, "V", False, documents)
-    )
+    results = asyncio.run(agent.aevaluate_vendor(criteria, "V", False, documents))
 
     # One CriterionEvaluation per criterion (aggregated across docs)
     assert len(results) == 2
@@ -387,9 +393,7 @@ def test_aevaluate_vendor_fans_out_across_criteria_and_documents():
 def test_aevaluate_vendor_preserves_input_criterion_order_in_results():
     criteria = [_crit("A"), _crit("B"), _crit("C"), _crit("D"), _crit("E")]
     documents = [_doc("only.pdf")]
-    stub = _MappingStubLLM(
-        {c.id: _vpd("MEETS", source_document="only.pdf") for c in criteria}
-    )
+    stub = _MappingStubLLM({c.id: _vpd("MEETS", source_document="only.pdf") for c in criteria})
     agent = VendorEvaluationAgent(model=stub, inter_batch_sleep_seconds=0)
 
     out = asyncio.run(agent.aevaluate_vendor(criteria, "V", False, documents))
@@ -428,9 +432,7 @@ def test_aevaluate_vendor_respects_concurrency_limit():
             return RunnableLambda(_afn)
 
     stub = _CountingStub()
-    agent = VendorEvaluationAgent(
-        model=stub, max_concurrency=1, inter_batch_sleep_seconds=0
-    )
+    agent = VendorEvaluationAgent(model=stub, max_concurrency=1, inter_batch_sleep_seconds=0)
     asyncio.run(agent.aevaluate_vendor(criteria, "V", False, documents))
     assert in_flight["max_seen"] == 1
 
@@ -472,12 +474,8 @@ def test_aevaluate_vendor_caps_concurrency_at_LLM_MAX_CONCURRENCY():
 def test_aevaluate_vendor_logs_throttle_decisions(caplog):
     criteria = [_crit(f"C{i}") for i in range(5)]
     documents = [_doc("d.pdf")]
-    stub = _MappingStubLLM(
-        {c.id: _vpd("MEETS", source_document="d.pdf") for c in criteria}
-    )
-    agent = VendorEvaluationAgent(
-        model=stub, max_concurrency=2, inter_batch_sleep_seconds=0.01
-    )
+    stub = _MappingStubLLM({c.id: _vpd("MEETS", source_document="d.pdf") for c in criteria})
+    agent = VendorEvaluationAgent(model=stub, max_concurrency=2, inter_batch_sleep_seconds=0.01)
 
     with caplog.at_level("INFO", logger="proceval.agents.evaluation_agent"):
         asyncio.run(agent.aevaluate_vendor(criteria, "V", False, documents))
@@ -490,20 +488,13 @@ def test_aevaluate_vendor_logs_throttle_decisions(caplog):
 def test_inter_batch_sleep_zero_skips_sleep_log(caplog):
     criteria = [_crit(f"C{i}") for i in range(4)]
     documents = [_doc("d.pdf")]
-    stub = _MappingStubLLM(
-        {c.id: _vpd("MEETS", source_document="d.pdf") for c in criteria}
-    )
-    agent = VendorEvaluationAgent(
-        model=stub, max_concurrency=2, inter_batch_sleep_seconds=0
-    )
+    stub = _MappingStubLLM({c.id: _vpd("MEETS", source_document="d.pdf") for c in criteria})
+    agent = VendorEvaluationAgent(model=stub, max_concurrency=2, inter_batch_sleep_seconds=0)
 
     with caplog.at_level("INFO", logger="proceval.agents.evaluation_agent"):
         asyncio.run(agent.aevaluate_vendor(criteria, "V", False, documents))
 
-    assert not any(
-        "Sleeping" in r.message and "before batch" in r.message
-        for r in caplog.records
-    )
+    assert not any("Sleeping" in r.message and "before batch" in r.message for r in caplog.records)
 
 
 # --- Sync wrapper + verdict roll-up ---------------------------------------
@@ -512,9 +503,7 @@ def test_inter_batch_sleep_zero_skips_sleep_log(caplog):
 def test_evaluate_vendor_returns_full_VendorEvaluation_with_accepted_verdict():
     criteria = [_crit("PQC_DOC_PAN", name="PAN"), _crit("PQC_DOC_GST", name="GST")]
     documents = [_doc("pan.pdf"), _doc("gst.pdf")]
-    stub = _MappingStubLLM(
-        {c.id: _vpd("MEETS", source_document="x.pdf") for c in criteria}
-    )
+    stub = _MappingStubLLM({c.id: _vpd("MEETS", source_document="x.pdf") for c in criteria})
     agent = VendorEvaluationAgent(model=stub, inter_batch_sleep_seconds=0)
 
     full = agent.evaluate_vendor(criteria, "VENDOR-A", False, documents)

@@ -17,7 +17,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    String,
     Text,
     func,
 )
@@ -47,9 +46,7 @@ class Evaluation(Base):
     technical_eval_json: Mapped[Optional[dict]] = mapped_column(JSONB)
     commercial_eval_json: Mapped[Optional[dict]] = mapped_column(JSONB)
     reviewer_feedback: Mapped[Optional[str]] = mapped_column(Text)
-    iteration: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=1, server_default="1"
-    )
+    iteration: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
     preparer_id: Mapped[str] = mapped_column(Text, nullable=False)
     reviewer_id: Mapped[Optional[str]] = mapped_column(Text)
     approver_id: Mapped[Optional[str]] = mapped_column(Text)

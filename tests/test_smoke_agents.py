@@ -47,7 +47,7 @@ class TokenCounter(BaseCallbackHandler):
     def on_llm_end(self, response: Any, **_kwargs: Any) -> None:
         self.calls += 1
         # Preferred: per-message usage_metadata on AIMessage
-        for gen_list in (response.generations or []):
+        for gen_list in response.generations or []:
             for gen in gen_list:
                 msg = getattr(gen, "message", None)
                 usage = getattr(msg, "usage_metadata", None) if msg else None
@@ -61,10 +61,9 @@ class TokenCounter(BaseCallbackHandler):
         self.output_tokens += usage.get("output_tokens", 0)
 
     def cost_usd(self) -> float:
-        return (
-            (self.input_tokens / 1_000_000) * PRICE_INPUT_PER_MTOK
-            + (self.output_tokens / 1_000_000) * PRICE_OUTPUT_PER_MTOK
-        )
+        return (self.input_tokens / 1_000_000) * PRICE_INPUT_PER_MTOK + (
+            self.output_tokens / 1_000_000
+        ) * PRICE_OUTPUT_PER_MTOK
 
 
 @pytest.fixture(scope="module")
@@ -149,5 +148,7 @@ def test_cost_summary(counter: TokenCounter):
     print(f"  Input tokens    : {counter.input_tokens:,}")
     print(f"  Output tokens   : {counter.output_tokens:,}")
     print(f"  Estimated cost  : ${counter.cost_usd():.4f} USD")
-    print(f"  (rates: ${PRICE_INPUT_PER_MTOK:.2f}/MTok input, "
-          f"${PRICE_OUTPUT_PER_MTOK:.2f}/MTok output)")
+    print(
+        f"  (rates: ${PRICE_INPUT_PER_MTOK:.2f}/MTok input, "
+        f"${PRICE_OUTPUT_PER_MTOK:.2f}/MTok output)"
+    )

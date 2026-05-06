@@ -26,7 +26,9 @@ class VerdictPerDoc(BaseModel):
         description="Numeric or short value when the document carries one (e.g., '249 LAKHS').",
     )
     reasoning: str = Field(..., description="Brief explanation citing this specific document.")
-    source_document: str = Field(..., description="Filename of the document this verdict applies to.")
+    source_document: str = Field(
+        ..., description="Filename of the document this verdict applies to."
+    )
 
 
 class CriterionEvaluation(BaseModel):

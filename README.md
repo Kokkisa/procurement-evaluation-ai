@@ -16,6 +16,20 @@ End-to-end automated tender evaluation: PDF ingest -> multi-agent criteria extra
 
 ![LangSmith dashboard showing 305 traces, 680K tokens, $0.11 across two end-to-end runs](docs/images/langsmith_aggregate_hero.png)
 
+## Real-data validation
+
+v0.1.0 was tagged after a successful end-to-end run on real vendor documents from a public-sector tender — not just the synthetic housekeeping fixture. A 3-vendor real-data bid pack: 23 PDFs (~50% notarised scans), 9 criteria, ~207 LLM calls, ~$0.50 USD spend. Full lifecycle (`/ingest → /confirm → /review/accept → /approve`) ran clean within configured timeouts.
+
+| Vendor | Technical | Commercial | Matches human evaluator? |
+|---|---|---|---|
+| Vendor A | ACCEPTED | ACCEPTED | yes |
+| Vendor B | REJECTED — PAN missing | ACCEPTED | yes |
+| Vendor C | REJECTED — PAN missing | ACCEPTED | yes |
+
+Beyond matching the human accept/reject decision on every vendor, the system flagged that a vendor's PAN submission was missing the **self-attestation** required by the corresponding PQC clause — a verification step a human reviewer skimming 23 PDFs could plausibly miss. Present-but-not-self-attested is a common audit-finding source; catching it on day one is the kind of finding that converts the system from "saves time" to "improves audit posture."
+
+Three small issues surfaced during validation and are documented as deferred fixes in [ADR-0008](docs/adr/ADR-0008-known-issues-v0.1.0.md): a cosmetic `verdict=VALUE` label on document criteria with embedded identifiers, a PDF filename that misses the `eval_id` prefix, and a PowerShell `curl` ergonomics gotcha (the third is fixed below). None affect the accept/reject decision.
+
 ## Architecture
 
 The system is structured as a FastAPI service with five sequential lifecycle endpoints, each backed by an idempotent agent. Long-form LLM calls are funneled through a provider-agnostic factory and bounded by a global semaphore for rate-limit safety. Every agent invocation emits a LangSmith trace automatically.
@@ -105,6 +119,35 @@ python scripts/run_eval_test.py
 The PDF is structured as five pages: header + tender metadata, technical evaluation matrix (per-criterion verdicts per vendor), commercial evaluation matrix, overall remarks with accept/reject rationale, and the lifecycle audit log + signature blocks.
 
 Sample screenshots: [page 1 (header + technical matrix)](docs/images/pdf_page1_header_techmatrix.png), [page 2 (overall remarks)](docs/images/pdf_page2_overall_remarks.png), [page 5 (audit log + signatures)](docs/images/pdf_page5_audit_signatures.png).
+
+## Calling the API from Windows PowerShell
+
+PowerShell aliases `curl` to its native `Invoke-WebRequest` cmdlet, which has incompatible argument semantics — `-X POST -d '{...}'`-style invocations URL-encode the body into the query string and never set `Content-Type`, so FastAPI returns `422 Unprocessable Entity`. Use `Invoke-RestMethod` instead, with the body as a JSON string and `-ContentType "application/json"`:
+
+```powershell
+# /confirm
+Invoke-RestMethod -Method POST `
+    -Uri "http://localhost:8000/confirm/$evalId" `
+    -ContentType "application/json" `
+    -Body '{"actor_id":"preparer1"}'
+
+# /review/accept
+Invoke-RestMethod -Method POST `
+    -Uri "http://localhost:8000/review/$evalId/accept" `
+    -ContentType "application/json" `
+    -Body '{"actor_id":"reviewer1"}'
+
+# /approve
+Invoke-RestMethod -Method POST `
+    -Uri "http://localhost:8000/approve/$evalId" `
+    -ContentType "application/json" `
+    -Body '{"actor_id":"approver1"}'
+
+# /audit  (GET, no body)
+Invoke-RestMethod -Method GET -Uri "http://localhost:8000/audit/$evalId"
+```
+
+If you'd rather use real `curl` from PowerShell, either invoke it through Git Bash (`bash -c "curl ..."`) or call the absolute path explicitly: `& "C:\Windows\System32\curl.exe" -X POST ...`. macOS, Linux, and Git Bash users can use the `curl` examples elsewhere in this README without any of this gymnastics.
 
 ## Design Decisions
 

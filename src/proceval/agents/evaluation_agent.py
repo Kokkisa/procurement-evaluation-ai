@@ -30,7 +30,7 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from langchain_core.exceptions import OutputParserException
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -102,9 +102,7 @@ class VendorEvaluationAgent:
         self.model = model if model is not None else get_chat_model(temperature=0.0)
         self.max_retries = max_retries
         self.max_concurrency = (
-            max_concurrency
-            if max_concurrency is not None
-            else settings.llm_max_concurrency
+            max_concurrency if max_concurrency is not None else settings.llm_max_concurrency
         )
         self.inter_batch_sleep_seconds = (
             inter_batch_sleep_seconds
@@ -143,20 +141,25 @@ class VendorEvaluationAgent:
         async with sem:
             self._in_flight += 1
             slot = self._in_flight
-            estimated_tokens = (
-                len(self._prompt_text) + len(document.text) + 500
-            ) // 4
+            estimated_tokens = (len(self._prompt_text) + len(document.text) + 500) // 4
             logger.info(
                 "Acquired LLM slot %d/%d for %s | %s | doc: %s (~%d tokens)",
-                slot, self.max_concurrency, vendor_name,
-                criterion.id, document.filename, estimated_tokens,
+                slot,
+                self.max_concurrency,
+                vendor_name,
+                criterion.id,
+                document.filename,
+                estimated_tokens,
             )
             if estimated_tokens > PER_DOC_TOKEN_WARNING:
                 logger.warning(
                     "Document %s for %s on %s estimated at %d tokens "
                     "(> %d threshold). Proceeding; consider chunking in v0.3.",
-                    document.filename, vendor_name, criterion.id,
-                    estimated_tokens, PER_DOC_TOKEN_WARNING,
+                    document.filename,
+                    vendor_name,
+                    criterion.id,
+                    estimated_tokens,
+                    PER_DOC_TOKEN_WARNING,
                 )
             try:
                 return await self._run_doc_call(
@@ -187,9 +190,7 @@ class VendorEvaluationAgent:
                 "vendor_name": vendor_name,
                 "criterion_id": criterion.id,
                 "document_filename": document.filename,
-                "input_token_estimate": (
-                    len(self._prompt_text) + len(document.text) + 500
-                ) // 4,
+                "input_token_estimate": (len(self._prompt_text) + len(document.text) + 500) // 4,
             },
         )
 
@@ -224,9 +225,7 @@ class VendorEvaluationAgent:
                 if isinstance(result, VerdictPerDoc):
                     # Force source_document — LLMs sometimes drop or mangle it.
                     if result.source_document != document.filename:
-                        result = result.model_copy(
-                            update={"source_document": document.filename}
-                        )
+                        result = result.model_copy(update={"source_document": document.filename})
                     return result
                 if isinstance(result, dict):
                     result.setdefault("source_document", document.filename)
@@ -428,9 +427,7 @@ class VendorEvaluationAgent:
         """Async equivalent of ``evaluate_vendor`` — fan out per-criterion +
         per-document calls and route through the deterministic post-processor.
         Use this from inside an existing event loop (FastAPI / Streamlit)."""
-        evaluations = await self.aevaluate_vendor(
-            criteria, vendor_name, is_msme, documents
-        )
+        evaluations = await self.aevaluate_vendor(criteria, vendor_name, is_msme, documents)
         verdict, remarks = compute_overall_verdict(
             vendor_name=vendor_name,
             is_msme=is_msme,
@@ -454,9 +451,7 @@ class VendorEvaluationAgent:
     ) -> VendorEvaluation:
         """Sync convenience wrapper. Use ``aevaluate_vendor_full`` from inside
         an existing event loop instead — ``asyncio.run`` cannot nest."""
-        return asyncio.run(
-            self.aevaluate_vendor_full(criteria, vendor_name, is_msme, documents)
-        )
+        return asyncio.run(self.aevaluate_vendor_full(criteria, vendor_name, is_msme, documents))
 
 
 def concatenate_vendor_docs(vendor_dir: Path) -> str:

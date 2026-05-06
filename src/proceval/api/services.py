@@ -35,9 +35,7 @@ async def run_full_evaluation(
     where reviewer feedback bites first, and the new criteria propagate).
     """
     tender_text, _ = extract_text(tender_path)
-    rubric = criteria_agent.extract(
-        tender_text, metadata, feedback_text=feedback_text
-    )
+    rubric = criteria_agent.extract(tender_text, metadata, feedback_text=feedback_text)
 
     vendor_dirs = sorted(p for p in vendors_root.iterdir() if p.is_dir())
     submissions = build_vendor_index(vendor_dirs)
@@ -77,9 +75,7 @@ async def run_full_evaluation(
     tech_aggregate = TechnicalEvaluation(
         rubric=rubric,
         vendor_evaluations=tech_per_vendor,
-        qualified_count=sum(
-            1 for e in tech_per_vendor if e.overall_verdict == "ACCEPTED"
-        ),
+        qualified_count=sum(1 for e in tech_per_vendor if e.overall_verdict == "ACCEPTED"),
         total_count=len(tech_per_vendor),
         summary_remarks=(
             f"{sum(1 for e in tech_per_vendor if e.overall_verdict == 'ACCEPTED')} "
@@ -89,9 +85,7 @@ async def run_full_evaluation(
     comm_aggregate = CommercialEvaluation(
         rubric=rubric,
         vendor_evaluations=comm_per_vendor,
-        qualified_count=sum(
-            1 for e in comm_per_vendor if e.overall_verdict == "ACCEPTED"
-        ),
+        qualified_count=sum(1 for e in comm_per_vendor if e.overall_verdict == "ACCEPTED"),
         total_count=len(comm_per_vendor),
     )
     return tech_aggregate, comm_aggregate

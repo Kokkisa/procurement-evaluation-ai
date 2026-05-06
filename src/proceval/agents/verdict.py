@@ -57,9 +57,7 @@ def compute_overall_verdict(
             failures.append(_format_partial_failure(criterion, ev))
             continue
         # Defensive: unknown verdict is treated as failure to avoid silent passes.
-        failures.append(
-            f"returned unrecognised verdict {ev.verdict!r} for {criterion.name}"
-        )
+        failures.append(f"returned unrecognised verdict {ev.verdict!r} for {criterion.name}")
 
     if not failures:
         return (
@@ -77,10 +75,7 @@ def compute_overall_verdict(
 
 def _applied_threshold(criterion: EvalCriterion, is_msme: bool) -> tuple[float | None, bool]:
     """Return (threshold_used, used_relaxation_flag)."""
-    if (
-        is_msme
-        and criterion.msme_relaxation_value is not None
-    ):
+    if is_msme and criterion.msme_relaxation_value is not None:
         return (criterion.msme_relaxation_value, True)
     return (criterion.threshold_value, False)
 

@@ -36,15 +36,13 @@ def _build_html(criteria, vendor_evaluations) -> str:
 
     # Header
     header_cells = [
-        '<th>S.No.</th>',
-        '<th>CRITERION</th>',
-        '<th>REQUIREMENT</th>',
+        "<th>S.No.</th>",
+        "<th>CRITERION</th>",
+        "<th>REQUIREMENT</th>",
     ]
     for ve in vendor_evaluations:
         msme_badge = '<span class="msme-badge">MSME</span>' if ve.get("is_msme") else ""
-        header_cells.append(
-            f'<th class="vendor">{html.escape(ve["vendor_name"])}{msme_badge}</th>'
-        )
+        header_cells.append(f'<th class="vendor">{html.escape(ve["vendor_name"])}{msme_badge}</th>')
     rows.append("<thead><tr>" + "".join(header_cells) + "</tr></thead>")
 
     # Body rows
@@ -61,17 +59,15 @@ def _build_html(criteria, vendor_evaluations) -> str:
         body.append("<tr>" + "".join(cells) + "</tr>")
 
     # OVERALL REMARKS row
-    remarks_cells = [
-        '<td colspan="3" class="col-criterion"><b>OVERALL REMARKS</b></td>'
-    ]
+    remarks_cells = ['<td colspan="3" class="col-criterion"><b>OVERALL REMARKS</b></td>']
     for ve in vendor_evaluations:
         verdict = (ve.get("overall_verdict") or "").upper()
         css = "cell-pass" if verdict == "ACCEPTED" else "cell-fail"
         remarks_cells.append(
             f'<td class="{css}">'
             f'<div class="verdict-tag {"pass" if verdict == "ACCEPTED" else "fail"}">{html.escape(verdict)}</div>'
-            f'{html.escape(ve.get("overall_remarks") or "")}'
-            f'</td>'
+            f"{html.escape(ve.get('overall_remarks') or '')}"
+            f"</td>"
         )
     body.append('<tr class="overall-row">' + "".join(remarks_cells) + "</tr>")
 
@@ -95,7 +91,7 @@ def _format_requirement(criterion: dict[str, Any]) -> str:
     if src:
         parts.append(f"<br><small>{html.escape(src)}</small>")
     if not parts:
-        return f"<i>document submission</i>"
+        return "<i>document submission</i>"
     return "".join(parts)
 
 

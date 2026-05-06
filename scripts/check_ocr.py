@@ -62,10 +62,10 @@ def main() -> int:
 
     print(f"\n=== check_ocr {pdf_path} ===\n")
     text, pages = extract_text(pdf_path)
-    print(f"\n--- result ---")
+    print("\n--- result ---")
     print(f"  pages         : {pages}")
     print(f"  total chars   : {len(text)}")
-    print(f"  first 500 chars:")
+    print("  first 500 chars:")
     print("-" * 60)
     print(text[:500])
     print("-" * 60)

@@ -6,11 +6,11 @@
 
 ## Context
 
-Block 13's hybrid OCR fallback enabled the system to ingest real Indian procurement documents. The first end-to-end run on real HPCL data (7 vendors, 56 PDFs, 107 MB total, ~50% scanned) exposed a fundamental scaling gap in the vendor evaluation agent.
+Block 13's hybrid OCR fallback enabled the system to ingest real Indian procurement documents. The first end-to-end run on a real PSU bid pack (7 vendors, 56 PDFs, 107 MB total, ~50% scanned) exposed a fundamental scaling gap in the vendor evaluation agent.
 
 The current architecture concatenates all OCR-extracted text from all of a vendor's documents into a single prompt, then evaluates that vendor against the full criteria set in one LLM call. On synthetic test fixtures (small clean PDFs), this produces ~10K-20K token prompts — well within model limits. On real OCR-heavy enterprise data, a single vendor's concatenated text can exceed 100K tokens.
 
-The failure was concrete and reproducible. PAM SYSTEMS PRIVATE LIMITED, with 8 PDFs totaling 36 MB (mostly notarized scans), produced a vendor evaluation prompt of 139,269 tokens against gpt-4o-mini's 128,000-token context ceiling. The call returned `openai.BadRequestError: context_length_exceeded` after 22 minutes of upstream pipeline work.
+The failure was concrete and reproducible. One vendor in the real bid pack, with 8 PDFs totaling 36 MB (mostly notarized scans), produced a vendor evaluation prompt of 139,269 tokens against gpt-4o-mini's 128,000-token context ceiling. The call returned `openai.BadRequestError: context_length_exceeded` after 22 minutes of upstream pipeline work.
 
 This is not a rate-limit problem (those are solved by ADR-0002). This is a per-call payload-size problem. No amount of concurrency tuning, sleep adjustment, or retry logic can split a 139K-token request into something the model accepts. The input itself must be reshaped.
 
@@ -51,4 +51,4 @@ The aggregation logic is deterministic Python, no LLM. This mirrors the verdict.
 - Upgrading to gpt-4o 200K context: rejected — 16x cost, just a higher cliff, doesn't fix auditability.
 
 ## Validation
-Validated when: the 3-vendor real-data run (SUPERTECH, A S MECHANICAL, ESSAR, ~17 MB total) completes /confirm successfully end-to-end; the PDF report shows per-criterion verdicts with at least one cited document per verdict; LangSmith traces show all per-document calls under 50K input tokens.
+Validated when: the 3-vendor real-data run (Vendor A / Vendor B / Vendor C, ~17 MB total) completes /confirm successfully end-to-end; the PDF report shows per-criterion verdicts with at least one cited document per verdict; LangSmith traces show all per-document calls under 50K input tokens.

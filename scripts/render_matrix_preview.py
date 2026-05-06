@@ -34,11 +34,31 @@ CRITERIA = [
         "aggregation_rule": "single_max",
         "source_clause": "PQC-2 (Technical)",
     },
-    {"id": "PQC_DOC_PAN", "name": "PAN Card Submission", "type": "document", "source_clause": "PQC-3"},
+    {
+        "id": "PQC_DOC_PAN",
+        "name": "PAN Card Submission",
+        "type": "document",
+        "source_clause": "PQC-3",
+    },
     {"id": "PQC_DOC_GST", "name": "GST Registration", "type": "document", "source_clause": "PQC-4"},
-    {"id": "PQC_DOC_UDYAM_MSME", "name": "Udyam Registration", "type": "document", "source_clause": "PQC-5"},
-    {"id": "PQC_DOC_BLACKLIST_DECL", "name": "Blacklisting Declaration", "type": "document", "source_clause": "PQC-6"},
-    {"id": "PQC_DOC_BIDDER_RESPONSE", "name": "Bidder Response Form", "type": "document", "source_clause": "PQC-7"},
+    {
+        "id": "PQC_DOC_UDYAM_MSME",
+        "name": "Udyam Registration",
+        "type": "document",
+        "source_clause": "PQC-5",
+    },
+    {
+        "id": "PQC_DOC_BLACKLIST_DECL",
+        "name": "Blacklisting Declaration",
+        "type": "document",
+        "source_clause": "PQC-6",
+    },
+    {
+        "id": "PQC_DOC_BIDDER_RESPONSE",
+        "name": "Bidder Response Form",
+        "type": "document",
+        "source_clause": "PQC-7",
+    },
 ]
 
 
@@ -65,10 +85,24 @@ def _vendor(name, msme, accept, evals, remarks):
 
 VENDORS = [
     _vendor(
-        "AROHA FACILITY SERVICES PVT LTD", True, True,
+        "AROHA FACILITY SERVICES PVT LTD",
+        True,
+        True,
         [
-            _ev("PQC_FIN_TURNOVER", "VALUE", "88.23 LAKHS (3-yr avg, MSME)", True, "Computed from FY 23-24/22-23/21-22 audited B/S"),
-            _ev("PQC_TECH_SIMILAR_WORK", "VALUE", "118.50 LAKHS", True, "Single PO with MERIDIAN MANUFACTURING"),
+            _ev(
+                "PQC_FIN_TURNOVER",
+                "VALUE",
+                "88.23 LAKHS (3-yr avg, MSME)",
+                True,
+                "Computed from FY 23-24/22-23/21-22 audited B/S",
+            ),
+            _ev(
+                "PQC_TECH_SIMILAR_WORK",
+                "VALUE",
+                "118.50 LAKHS",
+                True,
+                "Single PO with MERIDIAN MANUFACTURING",
+            ),
             _ev("PQC_DOC_PAN", "PROVIDED", reason="pan_card.pdf present"),
             _ev("PQC_DOC_GST", "PROVIDED", reason="GST REG-06 enclosed"),
             _ev("PQC_DOC_UDYAM_MSME", "PROVIDED", reason="udyam_registration.pdf present"),
@@ -78,7 +112,9 @@ VENDORS = [
         "All 7 evaluated criteria are satisfied. Vendor is technically qualified.",
     ),
     _vendor(
-        "TEJASWINI HOUSEKEEPING ENTERPRISES", False, True,
+        "TEJASWINI HOUSEKEEPING ENTERPRISES",
+        False,
+        True,
         [
             _ev("PQC_FIN_TURNOVER", "VALUE", "238.67 LAKHS (3-yr avg)", True),
             _ev("PQC_TECH_SIMILAR_WORK", "VALUE", "164.20 LAKHS", True),
@@ -91,10 +127,18 @@ VENDORS = [
         "All 7 evaluated criteria are satisfied. Vendor is technically qualified.",
     ),
     _vendor(
-        "SHRI MANGALAM SAFAI WORKS", True, False,
+        "SHRI MANGALAM SAFAI WORKS",
+        True,
+        False,
         [
             _ev("PQC_FIN_TURNOVER", "VALUE", "92.70 LAKHS (3-yr avg, MSME)", True),
-            _ev("PQC_TECH_SIMILAR_WORK", "VALUE", "38.42 LAKHS", False, "Single PO with ARYA PACKAGING - below 85L MSME-relaxed threshold"),
+            _ev(
+                "PQC_TECH_SIMILAR_WORK",
+                "VALUE",
+                "38.42 LAKHS",
+                False,
+                "Single PO with ARYA PACKAGING - below 85L MSME-relaxed threshold",
+            ),
             _ev("PQC_DOC_PAN", "PROVIDED"),
             _ev("PQC_DOC_GST", "PROVIDED"),
             _ev("PQC_DOC_UDYAM_MSME", "PROVIDED"),
@@ -104,7 +148,9 @@ VENDORS = [
         "Vendor did not meet Similar Works Experience threshold of 85.00 Lakhs (MSME-relaxed) - provided value 38.42 LAKHS. Hence rejected.",
     ),
     _vendor(
-        "PRABHAT DEEP SANITATION SOLUTIONS", False, True,
+        "PRABHAT DEEP SANITATION SOLUTIONS",
+        False,
+        True,
         [
             _ev("PQC_FIN_TURNOVER", "VALUE", "215.60 LAKHS (3-yr avg)", True),
             _ev("PQC_TECH_SIMILAR_WORK", "VALUE", "192.70 LAKHS", True),
@@ -117,14 +163,20 @@ VENDORS = [
         "All 7 evaluated criteria are satisfied. Vendor is technically qualified.",
     ),
     _vendor(
-        "RAGHAVENDRA MAINTENANCE WORKS", False, False,
+        "RAGHAVENDRA MAINTENANCE WORKS",
+        False,
+        False,
         [
             _ev("PQC_FIN_TURNOVER", "VALUE", "1090.17 LAKHS (3-yr avg)", True),
             _ev("PQC_TECH_SIMILAR_WORK", "VALUE", "211.40 LAKHS", True),
             _ev("PQC_DOC_PAN", "PROVIDED"),
             _ev("PQC_DOC_GST", "PROVIDED"),
             _ev("PQC_DOC_UDYAM_MSME", "PROVIDED", reason="N/A (non-MSME)"),
-            _ev("PQC_DOC_BLACKLIST_DECL", "NOT_PROVIDED", reason="No blacklisting declaration found in submission folder"),
+            _ev(
+                "PQC_DOC_BLACKLIST_DECL",
+                "NOT_PROVIDED",
+                reason="No blacklisting declaration found in submission folder",
+            ),
             _ev("PQC_DOC_BIDDER_RESPONSE", "PROVIDED"),
         ],
         "Vendor did not provide Blacklisting Declaration. Hence rejected.",

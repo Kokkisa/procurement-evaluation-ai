@@ -88,7 +88,16 @@ def _criteria() -> tuple[list[EvalCriterion], list[EvalCriterion]]:
     return technical, commercial
 
 
-def _make_eval(name: str, msme: bool, accept: bool, tech_criteria, *, missing_blacklist=False, sw_value=None, sw_met=True):
+def _make_eval(
+    name: str,
+    msme: bool,
+    accept: bool,
+    tech_criteria,
+    *,
+    missing_blacklist=False,
+    sw_value=None,
+    sw_met=True,
+):
     evals = []
     for c in tech_criteria:
         if c.id == "PQC_FIN_TURNOVER":
@@ -139,7 +148,7 @@ def _make_eval(name: str, msme: bool, accept: bool, tech_criteria, *, missing_bl
         overall_remarks=(
             "All evaluated criteria are satisfied."
             if accept
-            else f"Vendor did not satisfy one or more criteria. Hence rejected."
+            else "Vendor did not satisfy one or more criteria. Hence rejected."
         ),
     )
 
@@ -149,12 +158,19 @@ def _vendor_evaluations(tech_criteria) -> list[VendorEvaluation]:
         _make_eval("AROHA FACILITY SERVICES PVT LTD", True, True, tech_criteria),
         _make_eval("TEJASWINI HOUSEKEEPING ENTERPRISES", False, True, tech_criteria),
         _make_eval(
-            "SHRI MANGALAM SAFAI WORKS", True, False, tech_criteria,
-            sw_value="38.42 LAKHS", sw_met=False,
+            "SHRI MANGALAM SAFAI WORKS",
+            True,
+            False,
+            tech_criteria,
+            sw_value="38.42 LAKHS",
+            sw_met=False,
         ),
         _make_eval("PRABHAT DEEP SANITATION SOLUTIONS", False, True, tech_criteria),
         _make_eval(
-            "RAGHAVENDRA MAINTENANCE WORKS", False, False, tech_criteria,
+            "RAGHAVENDRA MAINTENANCE WORKS",
+            False,
+            False,
+            tech_criteria,
             missing_blacklist=True,
         ),
     ]
@@ -164,9 +180,19 @@ def _audit_events(eval_id: UUID) -> list[AuditEvent]:
     base = datetime(2026, 5, 2, 12, 0, tzinfo=timezone.utc)
     flow = [
         (AuditAction.UPLOADED, ActorRole.PREPARER, "preparer1", "tender + 5 vendor folder(s)"),
-        (AuditAction.METADATA_EXTRACTED, ActorRole.SYSTEM, "preparer1", "tender_number=DEMO/2026/HKP/001"),
+        (
+            AuditAction.METADATA_EXTRACTED,
+            ActorRole.SYSTEM,
+            "preparer1",
+            "tender_number=DEMO/2026/HKP/001",
+        ),
         (AuditAction.METADATA_CONFIRMED, ActorRole.PREPARER, "preparer1", None),
-        (AuditAction.EVALUATION_GENERATED, ActorRole.SYSTEM, "preparer1", "iteration=1 tech_qualified=3/5"),
+        (
+            AuditAction.EVALUATION_GENERATED,
+            ActorRole.SYSTEM,
+            "preparer1",
+            "iteration=1 tech_qualified=3/5",
+        ),
         (AuditAction.SENT_FOR_REVIEW, ActorRole.PREPARER, "preparer1", None),
         (AuditAction.REVIEW_ACCEPTED, ActorRole.REVIEWER, "reviewer1", "iteration=1"),
     ]
@@ -387,12 +413,22 @@ def test_pdf_iteration_number_changes_filename(tmp_path: Path):
         summary_remarks="x",
     )
     pdf_v1 = generate_final_pdf(
-        eval_id=eval_id, iteration=1, metadata=metadata, technical=technical,
-        audit_events=[], preparer_id="p", output_dir=tmp_path,
+        eval_id=eval_id,
+        iteration=1,
+        metadata=metadata,
+        technical=technical,
+        audit_events=[],
+        preparer_id="p",
+        output_dir=tmp_path,
     )
     pdf_v2 = generate_final_pdf(
-        eval_id=eval_id, iteration=2, metadata=metadata, technical=technical,
-        audit_events=[], preparer_id="p", output_dir=tmp_path,
+        eval_id=eval_id,
+        iteration=2,
+        metadata=metadata,
+        technical=technical,
+        audit_events=[],
+        preparer_id="p",
+        output_dir=tmp_path,
     )
     assert pdf_v1 != pdf_v2
     assert "iter1" in pdf_v1.name

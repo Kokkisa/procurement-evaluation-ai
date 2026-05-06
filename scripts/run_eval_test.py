@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import io
 import logging
-import os
 import sys
 import time
 import zipfile
@@ -49,11 +48,11 @@ TENDER_PDF = REPO_ROOT / "tests" / "fixtures" / "tender_housekeeping_demo.pdf"
 VENDORS_DIR = REPO_ROOT / "tests" / "fixtures" / "synthetic_vendors"
 
 EXPECTED_VERDICTS = {
-    "AROHA FACILITY SERVICES PVT LTD":     "ACCEPTED",
-    "TEJASWINI HOUSEKEEPING ENTERPRISES":  "ACCEPTED",
-    "SHRI MANGALAM SAFAI WORKS":           "REJECTED",
-    "PRABHAT DEEP SANITATION SOLUTIONS":   "ACCEPTED",
-    "RAGHAVENDRA MAINTENANCE WORKS":       "REJECTED",
+    "AROHA FACILITY SERVICES PVT LTD": "ACCEPTED",
+    "TEJASWINI HOUSEKEEPING ENTERPRISES": "ACCEPTED",
+    "SHRI MANGALAM SAFAI WORKS": "REJECTED",
+    "PRABHAT DEEP SANITATION SOLUTIONS": "ACCEPTED",
+    "RAGHAVENDRA MAINTENANCE WORKS": "REJECTED",
 }
 
 
@@ -180,17 +179,18 @@ def main() -> dict[str, Any]:
     print("=" * 70)
     print("  GOLD-STANDARD ACCEPT/REJECT SPLIT")
     print("=" * 70)
-    actual = {
-        ve["vendor_name"]: ve["overall_verdict"] for ve in tech["vendor_evaluations"]
-    }
+    actual = {ve["vendor_name"]: ve["overall_verdict"] for ve in tech["vendor_evaluations"]}
     failures: list[str] = []
     for vname, expected in EXPECTED_VERDICTS.items():
         got = actual.get(vname, "MISSING")
         marker = "OK" if got == expected else "!!"
-        msme_tag = " (MSME)" if any(
-            ve["vendor_name"] == vname and ve["is_msme"]
-            for ve in tech["vendor_evaluations"]
-        ) else ""
+        msme_tag = (
+            " (MSME)"
+            if any(
+                ve["vendor_name"] == vname and ve["is_msme"] for ve in tech["vendor_evaluations"]
+            )
+            else ""
+        )
         print(f"  [{marker}] {vname:<40}{msme_tag:<8} -> {got:<10} (expected {expected})")
         if got != expected:
             failures.append(f"{vname}: expected {expected}, got {got}")
@@ -201,9 +201,7 @@ def main() -> dict[str, Any]:
     # LangSmith link
     print("=" * 70)
     if settings.langchain_tracing_v2:
-        project_url = (
-            f"https://smith.langchain.com/o/me/projects/p/{settings.langchain_project}"
-        )
+        project_url = f"https://smith.langchain.com/o/me/projects/p/{settings.langchain_project}"
         print(f"  LangSmith trace project: {project_url}")
         print(
             f"  Filter by start_time around now to see this run's "

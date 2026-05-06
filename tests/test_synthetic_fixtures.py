@@ -21,11 +21,11 @@ TENDER = FIXTURES / "tender_housekeeping_demo.pdf"
 VENDORS = FIXTURES / "synthetic_vendors"
 
 EXPECTED_VENDORS = {
-    "aroha_facility_services":            {"is_msme": True,  "doc_count": 10, "is_accept": True},
-    "tejaswini_housekeeping_enterprises": {"is_msme": False, "doc_count": 9,  "is_accept": True},
-    "shri_mangalam_safai_works":          {"is_msme": True,  "doc_count": 10, "is_accept": False},
-    "prabhat_deep_sanitation_solutions":  {"is_msme": False, "doc_count": 9,  "is_accept": True},
-    "raghavendra_maintenance_works":      {"is_msme": False, "doc_count": 8,  "is_accept": False},
+    "aroha_facility_services": {"is_msme": True, "doc_count": 10, "is_accept": True},
+    "tejaswini_housekeeping_enterprises": {"is_msme": False, "doc_count": 9, "is_accept": True},
+    "shri_mangalam_safai_works": {"is_msme": True, "doc_count": 10, "is_accept": False},
+    "prabhat_deep_sanitation_solutions": {"is_msme": False, "doc_count": 9, "is_accept": True},
+    "raghavendra_maintenance_works": {"is_msme": False, "doc_count": 8, "is_accept": False},
 }
 
 
@@ -51,8 +51,7 @@ def test_vendor_folder_doc_count(slug, expected):
     vdir = VENDORS / slug
     pdfs = sorted(vdir.glob("*.pdf"))
     assert len(pdfs) == expected["doc_count"], (
-        f"{slug}: expected {expected['doc_count']} PDFs, got {len(pdfs)}: "
-        f"{[p.name for p in pdfs]}"
+        f"{slug}: expected {expected['doc_count']} PDFs, got {len(pdfs)}: {[p.name for p in pdfs]}"
     )
 
 
@@ -94,11 +93,11 @@ def test_vendor_index_msme_detection_matches_expected():
 def test_critical_numbers_parse_from_balance_sheets():
     """The numbers downstream eval will key on must be extractable from the PDF text."""
     cases = [
-        ("aroha_facility_services",            "audited_balance_sheet_FY2023-24.pdf", "95.40"),
+        ("aroha_facility_services", "audited_balance_sheet_FY2023-24.pdf", "95.40"),
         ("tejaswini_housekeeping_enterprises", "audited_balance_sheet_FY2023-24.pdf", "276.40"),
-        ("shri_mangalam_safai_works",          "audited_balance_sheet_FY2023-24.pdf", "99.20"),
-        ("prabhat_deep_sanitation_solutions",  "audited_balance_sheet_FY2023-24.pdf", "248.90"),
-        ("raghavendra_maintenance_works",      "audited_balance_sheet_FY2023-24.pdf", "1,253.40"),
+        ("shri_mangalam_safai_works", "audited_balance_sheet_FY2023-24.pdf", "99.20"),
+        ("prabhat_deep_sanitation_solutions", "audited_balance_sheet_FY2023-24.pdf", "248.90"),
+        ("raghavendra_maintenance_works", "audited_balance_sheet_FY2023-24.pdf", "1,253.40"),
     ]
     for slug, fname, marker in cases:
         text, _ = extract_text(VENDORS / slug / fname)
@@ -107,11 +106,11 @@ def test_critical_numbers_parse_from_balance_sheets():
 
 def test_critical_similar_work_values_parse():
     cases = [
-        ("aroha_facility_services",            "118.50"),
+        ("aroha_facility_services", "118.50"),
         ("tejaswini_housekeeping_enterprises", "164.20"),
-        ("shri_mangalam_safai_works",          "38.42"),  # the rejection-driving number
-        ("prabhat_deep_sanitation_solutions",  "192.70"),
-        ("raghavendra_maintenance_works",      "211.40"),
+        ("shri_mangalam_safai_works", "38.42"),  # the rejection-driving number
+        ("prabhat_deep_sanitation_solutions", "192.70"),
+        ("raghavendra_maintenance_works", "211.40"),
     ]
     for slug, marker in cases:
         text, _ = extract_text(VENDORS / slug / "purchase_order_similar_work_1.pdf")
@@ -121,6 +120,7 @@ def test_critical_similar_work_values_parse():
 def test_pan_and_gstin_format_patterns():
     """PAN must match AAAAA9999A, GSTIN must match SSAAAAA9999A1ZX (15 chars)."""
     import re
+
     pan_re = re.compile(r"PAN:\s*([A-Z]{5}\d{4}[A-Z])")
     gstin_re = re.compile(r"GSTIN:\s*(\d{2}[A-Z]{5}\d{4}[A-Z]\dZ[A-Z\d])")
     for slug in EXPECTED_VENDORS:

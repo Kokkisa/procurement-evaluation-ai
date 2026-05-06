@@ -24,9 +24,7 @@ def render_sidebar() -> None:
         if role != prev_role:
             st.session_state.actor_id = f"{role.lower()}1"
 
-        st.session_state.actor_id = st.text_input(
-            "Your ID", value=st.session_state.actor_id
-        )
+        st.session_state.actor_id = st.text_input("Your ID", value=st.session_state.actor_id)
 
         st.divider()
 
@@ -46,8 +44,8 @@ def render_sidebar() -> None:
                 for ev in audit["events"]:
                     st.markdown(
                         f'<span class="audit-event-action">{ev["action"]}</span>'
-                        f' &middot; {ev["actor_role"]} `{ev["actor_id"]}`'
-                        f'<br><small>{ev.get("notes") or ""}</small>',
+                        f" &middot; {ev['actor_role']} `{ev['actor_id']}`"
+                        f"<br><small>{ev.get('notes') or ''}</small>",
                         unsafe_allow_html=True,
                     )
             except Exception as e:

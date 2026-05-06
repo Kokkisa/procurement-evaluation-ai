@@ -539,6 +539,4 @@ def test_full_lifecycle_produces_expected_action_sequence(client):
         "complete_and_pushed",
     ]
     for action in expected_subset:
-        assert action in actions, (
-            f"Missing {action!r} from happy-path log. Full: {actions}"
-        )
+        assert action in actions, f"Missing {action!r} from happy-path log. Full: {actions}"

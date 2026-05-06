@@ -124,6 +124,7 @@ def _city(addr: str) -> str:
 
 # --- Vendor profiles -------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class VendorProfile:
     name: str
@@ -141,7 +142,7 @@ class VendorProfile:
     # Address & geography
     address: str
     state: str
-    state_code: str   # 2-digit GSTIN state code
+    state_code: str  # 2-digit GSTIN state code
     state_2alpha: str  # 2-letter Udyam state code
     district_code: str  # 2-digit Udyam district code
 
@@ -314,9 +315,7 @@ S = {
     "Heading": ParagraphStyle(
         "Heading", parent=_base["Heading2"], fontSize=12, spaceBefore=10, spaceAfter=6
     ),
-    "Body": ParagraphStyle(
-        "Body", parent=_base["BodyText"], fontSize=10, leading=13, spaceAfter=4
-    ),
+    "Body": ParagraphStyle("Body", parent=_base["BodyText"], fontSize=10, leading=13, spaceAfter=4),
     "Small": ParagraphStyle("Small", parent=_base["BodyText"], fontSize=9, leading=11),
     "Center": ParagraphStyle("Center", parent=_base["BodyText"], fontSize=10, alignment=1),
 }
@@ -365,7 +364,9 @@ def build_tender_pdf(out_path: Path) -> None:
 
     # Cover
     story.append(Paragraph(TENDER_ISSUER, S["Title"]))
-    story.append(Paragraph("(A Demonstration Entity for Procurement Process Automation)", S["Center"]))
+    story.append(
+        Paragraph("(A Demonstration Entity for Procurement Process Automation)", S["Center"])
+    )
     story.append(Spacer(1, 12))
     story.append(Paragraph("TENDER DOCUMENT", S["Title"]))
     story.append(Spacer(1, 12))
@@ -379,7 +380,10 @@ def build_tender_pdf(out_path: Path) -> None:
         ["Mode of Submission", "Two-cover system (Technical + Financial) via portal"],
         ["Estimated Annual Contract Value", "Rs. 240.00 Lakhs (indicative)"],
         ["Earnest Money Deposit (EMD)", "Rs. 4.80 Lakhs"],
-        ["Contract Duration", "Two (2) years, extendable by one (1) year on satisfactory performance"],
+        [
+            "Contract Duration",
+            "Two (2) years, extendable by one (1) year on satisfactory performance",
+        ],
     ]
     t = Table(_wrap_col(cover_meta, [1], skip_header=False), colWidths=[60 * mm, 110 * mm])
     t.setStyle(
@@ -527,7 +531,13 @@ def build_tender_pdf(out_path: Path) -> None:
         )
     )
     mp_data = [
-        ["Category", "Day Shift\n(0700-1500)", "Evening Shift\n(1500-2300)", "Night Shift\n(2300-0700)", "Total"],
+        [
+            "Category",
+            "Day Shift\n(0700-1500)",
+            "Evening Shift\n(1500-2300)",
+            "Night Shift\n(2300-0700)",
+            "Total",
+        ],
         ["Supervisor", "2", "1", "1", "4"],
         ["Skilled (Gardener / Pest Control Op.)", "4", "0", "0", "4"],
         ["Semi-Skilled (Cleaner-Sanitation Tech)", "12", "6", "4", "22"],
@@ -638,8 +648,12 @@ def build_tender_pdf(out_path: Path) -> None:
 
     # Annexures + signature
     story.append(Paragraph("SECTION 5 — ANNEXURES", S["Heading"]))
-    story.append(Paragraph("&bull; Annexure A: Minimum Wages Calculation Table (refer Section 3)", S["Body"]))
-    story.append(Paragraph("&bull; Annexure B: Bidder Response Form (template attached)", S["Body"]))
+    story.append(
+        Paragraph("&bull; Annexure A: Minimum Wages Calculation Table (refer Section 3)", S["Body"])
+    )
+    story.append(
+        Paragraph("&bull; Annexure B: Bidder Response Form (template attached)", S["Body"])
+    )
     story.append(Paragraph("&bull; Annexure C: Blacklisting Declaration Template", S["Body"]))
     story.append(Spacer(1, 24))
 
@@ -702,7 +716,11 @@ def build_balance_sheet(v: VendorProfile, fy_end_year: int, out_path: Path) -> N
         return f"{n:,.2f}"
 
     rev_data = [
-        ["Particulars", f"Year Ended\n{fy_end_str}\n(Amount in Rs.)", f"Year Ended\n{prev_fy_end_str}\n(Amount in Rs.)"],
+        [
+            "Particulars",
+            f"Year Ended\n{fy_end_str}\n(Amount in Rs.)",
+            f"Year Ended\n{prev_fy_end_str}\n(Amount in Rs.)",
+        ],
         ["Revenue from Operations", fmt(cur_inr * 0.95), fmt(prev_inr * 0.95)],
         ["Other Income", fmt(cur_inr * 0.05), fmt(prev_inr * 0.05)],
         ["Total Revenue (Turnover)", fmt(cur_inr), fmt(prev_inr)],
@@ -910,7 +928,9 @@ def build_gst_cert(v: VendorProfile, out_path: Path) -> None:
         ["Date of Liability", v.incorporation_date.strftime("%d-%b-%Y")],
         [
             "Date of Registration",
-            v.incorporation_date.replace(day=min(28, v.incorporation_date.day)).strftime("%d-%b-%Y"),
+            v.incorporation_date.replace(day=min(28, v.incorporation_date.day)).strftime(
+                "%d-%b-%Y"
+            ),
         ],
         ["Particulars of Approving Authority", "Asst. Commissioner, Range-XII, " + v.state],
     ]
@@ -927,7 +947,11 @@ def build_gst_cert(v: VendorProfile, out_path: Path) -> None:
     )
     story.append(t)
     story.append(Spacer(1, 24))
-    story.append(Paragraph("(Digitally signed by the GST authority. No physical signature required.)", S["Small"]))
+    story.append(
+        Paragraph(
+            "(Digitally signed by the GST authority. No physical signature required.)", S["Small"]
+        )
+    )
 
     _doc(out_path, story)
 
@@ -1028,8 +1052,7 @@ def build_blacklist_decl(v: VendorProfile, out_path: Path) -> None:
     story.append(Paragraph("Authorized Signatory", S["Body"]))
     story.append(
         Paragraph(
-            f"Place: {v.city} &nbsp;&nbsp; "
-            f"Date: {TENDER_FLOATED_DATE.strftime('%d-%b-%Y')}",
+            f"Place: {v.city} &nbsp;&nbsp; Date: {TENDER_FLOATED_DATE.strftime('%d-%b-%Y')}",
             S["Body"],
         )
     )
@@ -1131,8 +1154,7 @@ def build_bidder_response_form(v: VendorProfile, out_path: Path) -> None:
     story.append(Paragraph("Authorized Signatory", S["Body"]))
     story.append(
         Paragraph(
-            f"Place: {v.city} &nbsp;&nbsp; "
-            f"Date: {TENDER_FLOATED_DATE.strftime('%d-%b-%Y')}",
+            f"Place: {v.city} &nbsp;&nbsp; Date: {TENDER_FLOATED_DATE.strftime('%d-%b-%Y')}",
             S["Body"],
         )
     )

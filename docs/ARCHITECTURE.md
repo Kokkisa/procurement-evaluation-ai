@@ -96,6 +96,7 @@ A complete tender evaluation traverses six FastAPI endpoints. Five are write end
 **Behavior:**
 - Generates a unique `eval_id` (UUID).
 - Persists the raw uploads under `{settings.upload_dir}/{eval_id}/{tender.pdf, vendors/<slug>/...}`. ZIP archives are unzipped per-vendor; loose PDFs land in their own per-vendor folder.
+- Each PDF (tender + vendor docs) goes through the **hybrid extractor** in `src/proceval/ingestion/pdf_parser.py`: text-layer extraction via pdfplumber per page, OCR fallback (Tesseract via pdf2image) for any page whose text layer comes back below `settings.ocr_fallback_threshold` chars. OCR'd text is run through `normalize_ocr_text()` to strip mojibake and collapse whitespace before being fed downstream. See [ADR-0006](adr/0006-hybrid-pdf-extraction.md) for the trade-offs (hybrid vs always-OCR vs Textract).
 - The Metadata Agent extracts structured metadata from the tender PDF (tender number, floated date, bid due date, issuing office, location).
 - The vendor index is built deterministically from the on-disk folder structure (no LLM).
 - Output stored on the `evaluations` row: `tender_metadata_json` (full TenderMetadata as JSONB), plus the four denormalised fields (`tender_number`, `tender_name`, `tender_floated_date`, `tender_due_date`) for indexing.
@@ -392,7 +393,7 @@ procurement-evaluation-ai/
 │   ├── render_pdf_preview.py       # Final-PDF preview
 │   └── check_no_secrets.py         # Pre-commit secret guard
 ├── docs/
-│   ├── adr/                # Architecture Decision Records (5 ADRs)
+│   ├── adr/                # Architecture Decision Records (6 ADRs)
 │   ├── images/             # Hero screenshots (LangSmith + PDF)
 │   ├── ARCHITECTURE.md     # This file
 │   └── known-issues.md     # User-facing v0.1 known issues
@@ -423,4 +424,4 @@ procurement-evaluation-ai/
 
 - [README.md](../README.md) -- 60-second project overview
 - [docs/known-issues.md](known-issues.md) -- Known v0.1 issues
-- [docs/adr/](adr/) -- 5 Architecture Decision Records covering provider abstraction, concurrency, observability, cost optimization (proposed), and verification deferral
+- [docs/adr/](adr/) -- 6 Architecture Decision Records covering provider abstraction, concurrency, observability, cost optimization (proposed), verification deferral, and hybrid PDF extraction

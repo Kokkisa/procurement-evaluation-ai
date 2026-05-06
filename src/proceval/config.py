@@ -41,6 +41,14 @@ class Settings(BaseSettings):
     llm_max_concurrency: int = 3
     llm_inter_batch_sleep_seconds: float = 1.5
 
+    # OCR fallback for scanned PDFs (notarised statements, certificates).
+    # Hybrid extraction: try the text layer first, OCR only the pages where
+    # the text layer comes back nearly empty. Requires Tesseract + Poppler
+    # binaries on PATH; see ADR-0006.
+    ocr_enabled: bool = True
+    ocr_fallback_threshold: int = 50
+    ocr_dpi: int = 300
+
     langchain_tracing_v2: bool = False
     langchain_api_key: str = ""
     langchain_project: str = "procurement-evaluation-ai"

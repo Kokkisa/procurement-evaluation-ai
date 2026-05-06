@@ -26,10 +26,14 @@ dependencies = [
     "sqlalchemy>=2.0",
     "alembic>=1.13",
     "psycopg[binary]>=3.2",
-    # PDF
+    # PDF — text layer
     "pdfplumber>=0.11",
     "pypdf>=5.0",
     "reportlab>=4.2",
+    # PDF — OCR fallback for scanned pages (requires Tesseract + Poppler binaries)
+    "pytesseract>=0.3.10",
+    "pdf2image>=1.17.0",
+    "Pillow>=10.0.0",
     # Test data
     "faker>=28.0",
     # Display

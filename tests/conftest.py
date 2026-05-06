@@ -29,6 +29,10 @@ import os
 
 os.environ.setdefault("LANGCHAIN_TRACING_V2", "false")
 os.environ.setdefault("LLM_INTER_BATCH_SLEEP_SECONDS", "0")
+# Disable OCR fallback during tests so make_pdf-generated fixtures (which are
+# tiny, often <50 chars/page) don't try to invoke the system Tesseract binary.
+# OCR-specific tests in test_ocr_extraction.py re-enable it via monkeypatch.
+os.environ.setdefault("OCR_ENABLED", "false")
 
 from pathlib import Path
 

@@ -11,7 +11,7 @@ import asyncio
 from pathlib import Path
 
 from ..agents import CriteriaExtractionAgent, VendorEvaluationAgent
-from ..agents.evaluation_agent import concatenate_vendor_docs
+from ..agents.evaluation_agent import load_vendor_documents
 from ..ingestion import build_vendor_index, extract_text
 from ..schemas.evaluation import CommercialEvaluation, TechnicalEvaluation
 from ..schemas.tender import TenderMetadata
@@ -50,20 +50,23 @@ async def run_full_evaluation(
         sub = by_name.get(vendor_dir.name)
         if sub is None:
             continue
-        vendor_text = concatenate_vendor_docs(vendor_dir)
+        # Per ADR-0007: load each vendor doc as its own VendorDocument so the
+        # agent can fan out per (criterion, document) instead of stuffing the
+        # whole vendor blob into a single prompt.
+        documents = load_vendor_documents(vendor_dir)
 
         tech_eval, comm_eval = await asyncio.gather(
             eval_agent.aevaluate_vendor_full(
                 rubric.technical_criteria,
                 sub.vendor_name,
                 sub.detected_msme,
-                vendor_text,
+                documents,
             ),
             eval_agent.aevaluate_vendor_full(
                 rubric.commercial_criteria,
                 sub.vendor_name,
                 sub.detected_msme,
-                vendor_text,
+                documents,
             )
             if rubric.commercial_criteria
             else _empty_eval(sub.vendor_name, sub.detected_msme),

@@ -26,6 +26,7 @@ import pytest
 from langchain_core.callbacks import BaseCallbackHandler
 
 from proceval.agents import VendorEvaluationAgent, compute_overall_verdict
+from proceval.agents.evaluation_agent import load_vendor_documents
 from proceval.config import settings
 from proceval.ingestion.pdf_parser import extract_text
 from proceval.llm_factory import get_chat_model
@@ -172,25 +173,14 @@ async def _evaluate_vendor_with_focused_docs(
     is_msme: bool,
     vendor_dir: Path,
 ) -> VendorEvaluation:
-    """Per-criterion evaluation with criterion-specific doc filtering. Mirrors
-    ``agent.aevaluate_vendor`` but builds a focused docs blob per call."""
-    sem = asyncio.Semaphore(agent.max_concurrency)
-
-    async def _one(c: EvalCriterion):
-        async with sem:
-            text = build_focused_docs_text(vendor_dir, c)
-            return await agent.aevaluate_criterion(c, vendor_name, is_msme, text)
-
-    evals = await asyncio.gather(*[_one(c) for c in criteria])
-    verdict, remarks = compute_overall_verdict(
-        vendor_name=vendor_name, is_msme=is_msme, criteria=criteria, criterion_evaluations=evals
-    )
-    return VendorEvaluation(
-        vendor_name=vendor_name,
-        is_msme=is_msme,
-        criterion_evaluations=evals,
-        overall_verdict=verdict,
-        overall_remarks=remarks,
+    """Per ADR-0007 the agent itself fans out per-(criterion, document); the
+    Block 6 focused-docs trick is obsolete. We now load every document and let
+    the agent's per-doc NOT_APPLICABLE verdict do the filtering at the
+    aggregator. ``build_focused_docs_text`` + ``RELEVANT_DOC_PATTERNS`` above
+    are kept for reference / ad-hoc inspection but no longer used here."""
+    documents = load_vendor_documents(vendor_dir)
+    return await agent.aevaluate_vendor_full(
+        criteria, vendor_name, is_msme, documents
     )
 
 

@@ -113,20 +113,20 @@ A complete tender evaluation traverses six FastAPI endpoints. Five are write end
 
 **Behavior:**
 - The Criteria Extraction Agent reads the tender PDF text and emits the rubric: technical criteria (typically 7-9) + commercial criteria (typically 7-8). Output is validated against the `TenderRubric` Pydantic schema.
-- The Vendor Evaluation Agent fans out across all vendors × all criteria for both rubrics. The same agent class handles both technical and commercial criteria with different criterion lists; there is no separate "commercial agent". This is the high-fan-out phase that the bounded-concurrency layer is designed to handle.
-- Each per-(vendor, criterion) call produces a `CriterionEvaluation`: verdict (`PROVIDED` / `NOT_PROVIDED` / `VALUE` / `PARTIAL`), `extracted_value`, `threshold_met`, `reasoning`, `source_document`, `confidence`.
-- Per-vendor accept/reject + remarks are computed by `verdict.compute_overall_verdict()` — a deterministic Python function, not an LLM call. Rejection messages structurally mirror the spec's pattern: `"Vendor did not meet X threshold of Y Lakhs (MSME-relaxed). Provided value: Z. Hence rejected."`
+- The Vendor Evaluation Agent fans out across **(vendor × criterion × document)** tuples per ADR-0007 — one LLM call per document for each (vendor, criterion) pair. The same agent class handles both technical and commercial criteria with different criterion lists; there is no separate "commercial agent". This is the high-fan-out phase that the bounded-concurrency layer is designed to handle.
+- Each per-document call produces a `VerdictPerDoc`: verdict (`MEETS` / `DOES_NOT_MEET` / `NOT_APPLICABLE`), `extracted_value`, `reasoning`, `source_document`. The deterministic `aggregate_document_verdicts()` then collapses the per-doc list into one `CriterionEvaluation` per (vendor, criterion) — any `MEETS` wins, else strongest `DOES_NOT_MEET` cited, else `PARTIAL` (all `NOT_APPLICABLE`, flagged for human review).
+- Per-vendor accept/reject + remarks are computed by `verdict.compute_overall_verdict()` — a separate deterministic Python function, also not an LLM call. Rejection messages structurally mirror the spec's pattern: `"Vendor did not meet X threshold of Y Lakhs (MSME-relaxed). Provided value: Z. Hence rejected."`
 - Aggregated `TechnicalEvaluation` and `CommercialEvaluation` JSON blobs are written to the `evaluations` row.
 
 **Audit log entries:** `metadata_confirmed` (preparer), then `evaluation_generated` (system), then `sent_for_review` (preparer).
 
 **Status transition:** `metadata_extracted` → `metadata_confirmed` → `eval_ready`.
 
-**LLM call profile:**
+**LLM call profile (per ADR-0007 fan-out):**
 - Criteria extraction: 1 call, ~5K input tokens.
-- Vendor evaluation (technical): 5 vendors × ~7-9 criteria = ~40 calls.
-- Vendor evaluation (commercial): 5 vendors × ~7-8 criteria = ~40 calls.
-- **Total: ~80-85 calls per /confirm invocation.** This is where bounded concurrency matters most.
+- Vendor evaluation: `vendors × (technical_criteria + commercial_criteria) × documents_per_vendor` calls. For the synthetic 5-vendor / ~10-doc / ~16-criterion case: 5 × 16 × 10 ≈ **800 per-document calls** at ~1-3K input tokens each.
+- Each per-document call is bounded under 50K input tokens by construction; the token-budget guard logs a WARNING above that threshold so we see when v0.3 chunking would be needed.
+- This is where bounded concurrency matters most. With `LLM_MAX_CONCURRENCY=3` and `LLM_INTER_BATCH_SLEEP_SECONDS=1.5` the run stays comfortably under Anthropic Tier-1 / OpenAI gpt-4o-mini rate limits.
 
 ### 3. POST /review/{eval_id}/accept or /reject
 
@@ -212,12 +212,16 @@ Three LLM-driven agents plus one deterministic post-processor:
 |---|---|---|---|---|
 | `metadata_agent.py` | `MetadataExtractionAgent` | Tender PDF text | `TenderMetadata` Pydantic | 1 |
 | `criteria_agent.py` | `CriteriaExtractionAgent` | Tender PDF text + extracted metadata | `TenderRubric` Pydantic (technical + commercial criteria) | 1 |
-| `evaluation_agent.py` | `VendorEvaluationAgent` | Vendor docs blob + one criterion | `CriterionEvaluation` Pydantic | 1 per (vendor × criterion) |
+| `evaluation_agent.py` | `VendorEvaluationAgent.aevaluate_vendor_document` | One criterion + one document for one vendor | `VerdictPerDoc` Pydantic (`MEETS` / `DOES_NOT_MEET` / `NOT_APPLICABLE`) | 1 per (vendor × criterion × document) |
+| `evaluation_agent.py` | `VendorEvaluationAgent.aggregate_document_verdicts` | All `VerdictPerDoc` results for one (vendor, criterion) | `CriterionEvaluation` Pydantic | **0 — pure Python, no LLM** |
 | `verdict.py` | `compute_overall_verdict()` | All `CriterionEvaluation` results for one vendor | `(overall_verdict, overall_remarks)` | **0 — pure Python, no LLM** |
 
-The "Vendor Evaluation Agent" is one class. Technical and commercial evaluations use the same agent — they just pass different criterion lists from the rubric. There is no separate commercial agent; the rubric itself is structured so the same per-criterion call shape works for both.
+The "Vendor Evaluation Agent" is one class. Technical and commercial evaluations use the same agent with different criterion lists; the rubric is structured so the same per-(criterion, document) call shape works for both. Per ADR-0007 the agent fans out across each of a vendor's documents independently, then aggregates per-doc verdicts into a per-criterion result. This bounds per-call payload size (no document blob exceeds ~50K tokens) and makes the per-document reasoning visible in LangSmith for audit.
 
-The roll-up from per-criterion verdicts to per-vendor accept/reject + remarks lives in `verdict.py` and is **deterministic Python**, not an LLM call. This was a deliberate design choice — auditability + reproducibility win over flexibility for the final aggregation step. ADR-0002 in the build spec memo (not committed) captures this decision; the live build chose verdict.py for those reasons.
+Two layers of deterministic Python, no LLM, both critical for auditability:
+
+1. `aggregate_document_verdicts(criterion, per_doc_verdicts) -> CriterionEvaluation` — collapses the per-doc list. Decision rule: any `MEETS` wins; else strongest `DOES_NOT_MEET` cited (longest reasoning as proxy); else `PARTIAL` (all `NOT_APPLICABLE`, flagged for human review).
+2. `verdict.compute_overall_verdict(...)` — collapses the per-criterion list to the per-vendor `(overall_verdict, overall_remarks)`. Rejection remarks structurally mirror the spec's `"Vendor did not meet X threshold of Y Lakhs (MSME-relaxed). Provided value Z. Hence rejected."` pattern.
 
 Each LLM agent:
 1. Builds a `ChatPromptTemplate` from a text-file prompt template under `src/proceval/agents/prompts/`.
@@ -283,11 +287,15 @@ Tender PDF + Vendor Docs
     v
 [POST /confirm] --> Criteria Agent (1 LLM call)
     |               + Vendor Evaluation Agent      audit_log: metadata_confirmed
-    |                 (~80 calls under bounded      audit_log: evaluation_generated
-    |                  concurrency)                 audit_log: sent_for_review
+    |                 (per ADR-0007: one LLM call    audit_log: evaluation_generated
+    |                  per (vendor x criterion x      audit_log: sent_for_review
+    |                  document); each per-doc
+    |                  payload bounded under 50K
+    |                  tokens; bounded concurrency)
+    |               + aggregate_document_verdicts() (no LLM)
     |               + verdict.compute_overall_verdict() (no LLM)
     |               --> evaluations.{technical,commercial}_eval_json
-    |               +--> ~80 LangSmith traces
+    |               +--> N x M x K LangSmith traces (one per per-doc call)
     v
 [GET  /audit]   --> read-only view of audit_log + iteration + status
     |
@@ -393,7 +401,7 @@ procurement-evaluation-ai/
 │   ├── render_pdf_preview.py       # Final-PDF preview
 │   └── check_no_secrets.py         # Pre-commit secret guard
 ├── docs/
-│   ├── adr/                # Architecture Decision Records (6 ADRs)
+│   ├── adr/                # Architecture Decision Records (7 ADRs)
 │   ├── images/             # Hero screenshots (LangSmith + PDF)
 │   ├── ARCHITECTURE.md     # This file
 │   └── known-issues.md     # User-facing v0.1 known issues
@@ -424,4 +432,4 @@ procurement-evaluation-ai/
 
 - [README.md](../README.md) -- 60-second project overview
 - [docs/known-issues.md](known-issues.md) -- Known v0.1 issues
-- [docs/adr/](adr/) -- 6 Architecture Decision Records covering provider abstraction, concurrency, observability, cost optimization (proposed), verification deferral, and hybrid PDF extraction
+- [docs/adr/](adr/) -- 7 Architecture Decision Records covering provider abstraction, concurrency, observability, cost optimization (proposed), verification deferral, hybrid PDF extraction, and per-document evaluation

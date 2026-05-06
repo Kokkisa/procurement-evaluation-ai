@@ -46,6 +46,7 @@ flowchart LR
 - **Provider-agnostic LLM** -- `ChatOpenAI`, `ChatAnthropic`, and `ChatOllama` are interchangeable via the `LLM_PROVIDER` environment variable. No code changes needed to swap providers.
 - **Bounded concurrency** -- A global semaphore (`LLM_MAX_CONCURRENCY`) plus inter-batch sleep (`LLM_INTER_BATCH_SLEEP_SECONDS`) prevent rate-limit failures even under fan-out.
 - **Hybrid PDF extraction** -- pdfplumber's text layer first; Tesseract OCR fallback per page when the text layer comes back below `OCR_FALLBACK_THRESHOLD` chars. Handles real procurement bid packs that mix digital docs with notarised scans. Configurable via `OCR_ENABLED`. See [ADR-0006](docs/adr/0006-hybrid-pdf-extraction.md).
+- **Per-document evaluation** -- For each (vendor, criterion) pair the agent fans out one LLM call per document and aggregates per-doc verdicts deterministically (any `MEETS` wins). Bounds per-call payload size and gives auditable per-document reasoning, so a 7-vendor / 50+ MB / OCR-heavy real bid pack doesn't trip the model's context-length ceiling. See [ADR-0007](docs/adr/0007-per-document-evaluation.md).
 - **Audit-by-default** -- Every state transition writes a row to the lifecycle audit log, surfaced in the final PDF.
 - **Observability-by-default** -- Setting `LANGCHAIN_TRACING_V2=true` propagates to the LangChain tracer with no additional wiring.
 
@@ -107,7 +108,7 @@ Sample screenshots: [page 1 (header + technical matrix)](docs/images/pdf_page1_h
 
 ## Design Decisions
 
-Six architectural decisions are recorded as ADRs:
+Seven architectural decisions are recorded as ADRs:
 
 | ADR | Decision | Status |
 |---|---|---|
@@ -117,6 +118,7 @@ Six architectural decisions are recorded as ADRs:
 | [0004](docs/adr/0004-multi-model-cascade-proposed.md) | Multi-model cascade for quality on borderline cases | Proposed (v0.2) |
 | [0005](docs/adr/0005-gold-standard-verification-deferred.md) | Defer gold-standard verification fix | Accepted |
 | [0006](docs/adr/0006-hybrid-pdf-extraction.md) | Hybrid PDF extraction (text layer + OCR fallback) | Accepted |
+| [0007](docs/adr/0007-per-document-evaluation.md) | Per-document vendor evaluation (handles 100K+ token vendor inputs) | Accepted |
 
 The two most consequential decisions during the build were:
 

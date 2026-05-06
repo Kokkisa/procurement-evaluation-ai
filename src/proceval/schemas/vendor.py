@@ -12,6 +12,23 @@ class VendorSubmission(BaseModel):
     detected_msme: bool = Field(False, description="Inferred from Udyam/NSIC presence")
 
 
+class VerdictPerDoc(BaseModel):
+    """LLM output for a single (vendor, criterion, document) tuple.
+
+    Per ADR-0007 the vendor-evaluation agent fans out across each of a
+    vendor's documents independently. The aggregator then collapses a list
+    of these into a single ``CriterionEvaluation`` per (vendor, criterion).
+    """
+
+    verdict: Literal["MEETS", "DOES_NOT_MEET", "NOT_APPLICABLE"]
+    extracted_value: Optional[str] = Field(
+        None,
+        description="Numeric or short value when the document carries one (e.g., '249 LAKHS').",
+    )
+    reasoning: str = Field(..., description="Brief explanation citing this specific document.")
+    source_document: str = Field(..., description="Filename of the document this verdict applies to.")
+
+
 class CriterionEvaluation(BaseModel):
     criterion_id: str
     verdict: Literal["PROVIDED", "NOT_PROVIDED", "VALUE", "PARTIAL"]

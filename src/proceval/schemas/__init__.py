@@ -4,7 +4,7 @@ from .audit import ActorRole, AuditAction, AuditEvent
 from .evaluation import CommercialEvaluation, FullEvaluation, TechnicalEvaluation
 from .feedback import ReviewerFeedback
 from .tender import CriterionType, EvalCriterion, TenderMetadata, TenderRubric
-from .vendor import CriterionEvaluation, VendorEvaluation, VendorSubmission
+from .vendor import CriterionEvaluation, VendorEvaluation, VendorSubmission, VerdictPerDoc
 
 __all__ = [
     "ActorRole",
@@ -21,4 +21,5 @@ __all__ = [
     "TenderRubric",
     "VendorEvaluation",
     "VendorSubmission",
+    "VerdictPerDoc",
 ]

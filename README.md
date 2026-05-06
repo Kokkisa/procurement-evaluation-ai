@@ -112,7 +112,7 @@ Five architectural decisions are recorded as ADRs:
 | [0001](docs/adr/0001-provider-agnostic-llm-factory.md) | Provider-agnostic LLM factory | Accepted |
 | [0002](docs/adr/0002-bounded-concurrency-orchestration.md) | Bounded concurrency for LLM orchestration | Accepted |
 | [0003](docs/adr/0003-langsmith-env-propagation.md) | Propagate LangSmith env vars to `os.environ` | Accepted |
-| [0004](docs/adr/0004-multi-model-cascade-proposed.md) | Multi-model cascade for cost optimization | Proposed (v0.2) |
+| [0004](docs/adr/0004-multi-model-cascade-proposed.md) | Multi-model cascade for quality on borderline cases | Proposed (v0.2) |
 | [0005](docs/adr/0005-gold-standard-verification-deferred.md) | Defer gold-standard verification fix | Accepted |
 
 The two most consequential decisions during the build were:
@@ -178,7 +178,7 @@ Sample LangSmith views: [aggregate dashboard](docs/images/langsmith_aggregate_he
 
 Roadmap for v0.2:
 
-- **Multi-model cascade** -- Use gpt-4o-mini for first-pass extraction, then Claude Sonnet for borderline-confidence refinement. Estimated ~80% cost reduction at quality parity. See [ADR-0004](docs/adr/0004-multi-model-cascade-proposed.md).
+- **Multi-model cascade for borderline cases** -- Use gpt-4o-mini as first-pass evaluator for the ~80% of criteria with unambiguous answers, and escalate to Claude Sonnet (or gpt-4o) only when the draft confidence falls below a tunable threshold. Total per-run cost increases (cents-per-run range, not order-of-magnitude), but quality on nuanced criteria likely improves. Promotion from Proposed to Accepted requires measured precision/recall data on a labeled borderline-case dataset, which we do not yet have. See [ADR-0004](docs/adr/0004-multi-model-cascade-proposed.md).
 - **Gold-standard verification fix** -- Split the verification harness into separate `tech_expected` and `comm_expected` fields so the script no longer reports MISSING for vendors that are correctly evaluated. See [ADR-0005](docs/adr/0005-gold-standard-verification-deferred.md) and [docs/known-issues.md](docs/known-issues.md).
 - **Streamlit reviewer UI** -- A web UI for the human-review step (currently driven by direct API calls). Faster turnaround during iterative evaluation cycles.
 - **Multi-tenant deployment** -- Per-tenant database schemas + row-level security for production multi-customer use.

@@ -16,6 +16,12 @@ End-to-end automated tender evaluation: PDF ingest -> multi-agent criteria extra
 
 ![LangSmith dashboard showing 305 traces, 680K tokens, $0.11 across two end-to-end runs](docs/images/langsmith_aggregate_hero.png)
 
+## Walkthrough
+
+A 3-minute screen walkthrough of the system in action — repo structure, API surface, real-data run results, and LangSmith observability:
+
+[Watch on Loom](https://www.loom.com/share/2c8fb7b6cec847868f569addb780290c)
+
 ## Real-data validation
 
 v0.1.0 was tagged after a successful end-to-end run on real vendor documents from a public-sector tender — not just the synthetic housekeeping fixture. A 3-vendor real-data bid pack: 23 PDFs (~50% notarised scans), 9 criteria, ~207 LLM calls, ~$0.50 USD spend. Full lifecycle (`/ingest → /confirm → /review/accept → /approve`) ran clean within configured timeouts.
